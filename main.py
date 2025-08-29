@@ -36,7 +36,7 @@ def main():
         print("Setting up Appium driver...")
         driver = driver_manager.setup_driver()
 
-        driver.save_screenshot("sanity.png")
+        # driver.save_screenshot("sanity.png")
         print("Sanity screenshot saved.")
 
         screen_size = driver_manager.get_screen_size()
