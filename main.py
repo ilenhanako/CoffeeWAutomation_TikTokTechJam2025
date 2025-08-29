@@ -2,6 +2,9 @@
 import time
 import sys
 from pathlib import Path
+from graph.workflow import build_workflow
+from graph import nodes
+from ai_agents.evaluator import AIEvaluator
 
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
@@ -21,13 +24,17 @@ def main():
     print("Starting Mobile UI Automation")
     
     driver_manager = DriverManager()
+    driver_manager.wait_for_app_launch(4)
     screenshot_manager = ScreenshotManager()
+    evaluator = AIEvaluator()
     processor_config = ProcessorConfig()
     
     try:
         print("Setting up Appium driver...")
         driver = driver_manager.setup_driver()
-        driver_manager.wait_for_app_launch(4)
+
+        driver.save_screenshot("sanity.png")
+        print("Sanity screenshot saved.")
         
         mobile_use = MobileUse(
             cfg={
@@ -39,6 +46,8 @@ def main():
         
         qwen_client = QwenClient()
         action_processor = ActionProcessor(driver_manager, mobile_use, qwen_client)
+
+        
         
         guard = InterruptionGuard(
             llm_client_factory=lambda: qwen_client.client,
@@ -47,19 +56,57 @@ def main():
             allowlist_steps=["record", "camera", "microphone", "login", "sign in"],
             blocklist_ids=["ad_", "promo_", "offer_", "interstitial", "com.google.android.gms.ads"]
         )
-        
 
-        step_executor = StepExecutor(driver_manager, action_processor, guard, processor_config)
-        
-        screenshot_path = screenshot_manager.take_screenshot(driver)
+        nodes.set_dependencies(
+            driver_manager,
+            screenshot_manager,
+            action_processor,
+            evaluator,
+            guard
+        )
         
         business_goal = 'Comment on a video'
         print(f"Business Goal: {business_goal}")
+        step_executor = StepExecutor(driver_manager, action_processor, guard, processor_config)
         
-        run_scenario_with_planning(business_goal, step_executor, complexity="medium")
+        screenshot_path = screenshot_manager.take_screenshot(driver)
+        planner = MultiScenarioPlannerAgent(api_key=config.DASHSCOPE_API_KEY)
+        scenarios = planner.generate_scenarios(business_goal, complexity="medium")
+
+        if not scenarios:
+            print("⚠️ No scenarios generated. Exiting.")
+            return      
         
-    except KeyboardInterrupt:
-        print("\n⏹️ Automation interrupted by user")
+        
+        # run_scenario_with_planning(business_goal, step_executor, complexity="medium")
+
+        graph = build_workflow()
+
+        for scenario in scenarios:
+            print(f"\n🚀 Executing Scenario {scenario.scenario_id}: {scenario.scenario_title}")
+
+            for step in scenario.steps:
+                print(f"\n   ▶ Step {step.step_id}: {step.description} [{step.action_type}]")
+
+                # build graph state from planner step
+                state = {
+                    "business_goal": business_goal,
+                    "user_query": getattr(step, "query_for_qwen", step.description),
+                    "step_description": step.description,
+                    "expected_state_hint": step.expected_state,
+                    "cycle": 0,
+                    "done": False,
+                    "notes": []
+                }
+
+                result = graph.invoke(state)
+
+                if result.get("done"):
+                    print(f"   ✅ Step {step.step_id} completed | Notes: {result.get('notes')}")
+                else:
+                    print(f"   ❌ Step {step.step_id} failed | Notes: {result.get('notes')}")
+                
+        
     except Exception as e:
         print(f"❌ Error during execution: {e}")
         import traceback
@@ -110,3 +157,4 @@ def run_scenario_with_planning(business_goal: str, step_executor: StepExecutor, 
 
 if __name__ == "__main__":
     main()
+

@@ -10,6 +10,8 @@ class ExecutorStep:
     query_for_qwen: str
     alternative_actions: List[str]
 
+    expected_state: Optional[str] = None
+
 @dataclass
 class ScenarioPlan:
     # a test scenario
