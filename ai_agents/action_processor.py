@@ -41,13 +41,14 @@ class ActionProcessor:
     
     COORD_ACTIONS = {"click", "long_press", "swipe"}
     
-    def __init__(self, driver_manager: DriverManager, mobile_use: MobileUse, qwen_client: QwenClient):
+    def __init__(self, driver_manager: DriverManager, mobile_use: MobileUse, qwen_client: QwenClient, demo_coordinator=None):
         self.driver_manager = driver_manager
         self.mobile_use = mobile_use
         self.qwen_client = qwen_client
         self.screenshot_manager = ScreenshotManager()
         self.processor_config = ProcessorConfig()
         self.coord= CoordinateUtils()
+        self.demo_coordinator = demo_coordinator
     
     def execute_enhanced_xml_first(self, screenshot_path: str, user_query: str) -> ActionResult:
         driver = self.driver_manager.get_driver()
@@ -84,6 +85,11 @@ class ActionProcessor:
         return self.process_screenshot_with_qwen(screenshot_path, user_query)
     
     def process_screenshot_with_qwen(self, screenshot_path: str, user_query: str) -> ActionResult:
+        if self.demo_coordinator and self.demo_coordinator.should_use_demo_mode(user_query):
+            demo_result = self.demo_coordinator.execute_demo_action(user_query)
+            if demo_result:
+                return demo_result
+        
         driver = self.driver_manager.get_driver()
         page_source = self.driver_manager.get_page_source()
         

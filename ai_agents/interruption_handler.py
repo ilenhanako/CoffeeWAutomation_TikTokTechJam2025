@@ -188,6 +188,12 @@ Be conservative and avoid risky clicks.
 
 
     def _normalize_and_call(self, act: dict, mobile_use, resized_w: int, resized_h: int, orig_w: int, orig_h: int):
+        if isinstance(act, str):
+            act = {"action": act}
+        elif not isinstance(act, dict):
+      
+            act = {"action": "click"}
+    
         args = {"action": self._normalize_mobile_action(act.get("action","click"))}
         if "text" in act: args["text"] = act["text"]
         if "content_desc" in act: args["content-desc"] = act["content_desc"]

@@ -5,6 +5,7 @@ from pathlib import Path
 from graph.workflow import build_workflow
 from graph import nodes
 from ai_agents.evaluator import AIEvaluator
+from utils.demo_coordinates import DemoCoordinator
 
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
@@ -28,6 +29,8 @@ def main():
     screenshot_manager = ScreenshotManager()
     evaluator = AIEvaluator()
     processor_config = ProcessorConfig()
+
+    DEMO_MODE = True
     
     try:
         print("Setting up Appium driver...")
@@ -47,7 +50,25 @@ def main():
         )
         
         qwen_client = QwenClient()
+        demo_coordinator = None
         action_processor = ActionProcessor(driver_manager, mobile_use, qwen_client)
+
+        if DEMO_MODE:
+            demo_coordinator = DemoCoordinator(
+                mobile_use=mobile_use,
+                execute_with_retry_func=action_processor.execute_with_retry
+            )
+           
+            action_processor.demo_coordinator = demo_coordinator
+        # if DEMO_MODE:
+        #     print("🎯 Demo mode enabled - using hardcoded coordinates")
+        #     demo_coordinator = DemoCoordinator(
+        #         mobile_use=mobile_use,
+        #         execute_with_retry_func=lambda args, mobile, retries, delay: 
+        #             ActionProcessor(driver_manager, mobile_use, qwen_client).execute_with_retry(args, mobile, retries, delay)
+        #     )
+
+        action_processor = ActionProcessor(driver_manager, mobile_use, qwen_client,demo_coordinator=demo_coordinator)
 
         
         
@@ -67,7 +88,7 @@ def main():
             guard
         )
         
-        business_goal = 'Comment on a video'
+        business_goal = 'Like a video on home page'
         print(f"Business Goal: {business_goal}")
         step_executor = StepExecutor(driver_manager, action_processor, guard, processor_config)
         
@@ -83,6 +104,7 @@ def main():
         # run_scenario_with_planning(business_goal, step_executor, complexity="medium")
 
         graph = build_workflow()
+        print(scenarios)
 
         for scenario in scenarios:
             print(f"\n🚀 Executing Scenario {scenario.scenario_id}: {scenario.scenario_title}")
@@ -107,7 +129,9 @@ def main():
                     print(f"   ✅ Step {step.step_id} completed | Notes: {result.get('notes')}")
                 else:
                     print(f"   ❌ Step {step.step_id} failed | Notes: {result.get('notes')}")
-                
+            print("↻ Resetting GUI for next scenario...")
+            driver_manager.reset_app(clear_data=False)
+            time.sleep(1.0)
         
     except Exception as e:
         print(f"❌ Error during execution: {e}")

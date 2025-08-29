@@ -1,6 +1,6 @@
 STATIC_UI_KB = {
     "tiktok": {
-            "like":    {"pos": [(0.935, 0.42)], "desc": "heart on right sidebar"},
+        "like":    {"pos": [(0.935, 0.42)], "desc": "heart on right sidebar"},
         "comment": {"pos": [(0.935, 0.52)], "desc": "comment bubble on right sidebar"},
         "share":   {"pos": [(0.935, 0.61)], "desc": "curved share arrow on right sidebar"},
         "mute":    {"pos": [(0.935, 0.71)], "desc": "speaker icon at lower right"},

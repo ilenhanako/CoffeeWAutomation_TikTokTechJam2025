@@ -51,3 +51,25 @@ class DriverManager:
                 print(f"Warning: Error quitting driver: {e}")
             finally:
                 self.driver = None
+
+    def reset_app(self, clear_data: bool = False):
+        driver = self.get_driver()
+        package = config.APP_PACKAGE 
+
+        try:
+            driver.terminate_app(package)
+        except Exception:
+            pass
+
+        if clear_data:
+            try:
+                driver.execute_script("mobile: shell", {
+                    "command": "pm",
+                    "args": ["clear", package]
+                })
+            except Exception:
+                pass
+
+        # Relaunch
+        driver.activate_app(package)
+        driver.implicitly_wait(config.IMPLICIT_WAIT)
