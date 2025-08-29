@@ -35,11 +35,13 @@ def main():
 
         driver.save_screenshot("sanity.png")
         print("Sanity screenshot saved.")
+
+        screen_size = driver_manager.get_screen_size()
         
         mobile_use = MobileUse(
             cfg={
-                "display_width_px": 1080, 
-                "display_height_px": 1920
+                "display_width_px": screen_size["width"],
+                "display_height_px": screen_size["height"]
             }, 
             driver=driver
         )

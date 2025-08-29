@@ -17,6 +17,7 @@ from config.settings import config
 from qwen_vl_utils import smart_resize
 from tools.mobile_tool import MobileUse
 from models.execution_models import ProcessorConfig
+from utils.knowledge_block import build_static_knowledge_block, detect_app
 class ActionProcessor:
     
     VALID_MOBILE_ACTIONS = {
@@ -56,13 +57,14 @@ class ActionProcessor:
         relevant_elements = self._find_relevant_elements(page_source, user_query)
         
         
-        mobile_use = MobileUse(
-            cfg={
-                "display_width_px": 1080, 
-                "display_height_px": 1920
-            }, 
-            driver=driver
-        )
+        # mobile_use = MobileUse(
+        #     cfg={
+        #         "display_width_px": 1080, 
+        #         "display_height_px": 1920
+        #     }, 
+        #     driver=driver
+        # )
+        mobile_use= self.mobile_use
         
         if len(relevant_elements) == 1:
             print("XML-first: Found single matching element.")
@@ -85,6 +87,8 @@ class ActionProcessor:
         driver = self.driver_manager.get_driver()
         page_source = self.driver_manager.get_page_source()
         
+        MAX_XML = 120_000
+        page_source_trimmed = page_source[:MAX_XML]
     
         processor = self.processor_config
         
@@ -109,8 +113,9 @@ class ActionProcessor:
             "Wrap the function call inside <tool_call>{...}</tool_call> or output pure JSON only. "
             "For 'type' actions you MUST include a 'text' string to input."
             "For 'type' actions, you must first click on the field before suggesting the step to type. "
-            "If the step or business goal implies commenting/posting/searching, generate a short, safe default,"
+            "If the step or business goal implies commenting/posting/searching, ALWAYS produce a 'type' action with a text string."
             " e.g., 'Great picture!' when commenting, if no explicit text was given."
+            "If needed, assume the text field is already focused. Do NOT stop at just a click."
         )
         
         tools = [{"type": "function", "function": mobile_use.function}]
@@ -128,17 +133,19 @@ class ActionProcessor:
             lang=None
         )[0].model_dump()
         
+        static_block = build_static_knowledge_block(app=detect_app("tiktok"),
+                                                 screenshot_path=screenshot_path,
+                                                 user_query=user_query)
+
         base64_image = self.screenshot_manager.encode_image(screenshot_path)
         messages = [
             {"role": "system", "content": [{"type": "text", "text": msg["text"]} for msg in system_message["content"]]},
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}},
-                    {"type": "text", "text": "UI Hierarchy:\n" + page_source},
-                    {"type": "text", "text": user_query}
-                ],
-            },
+            {"role": "user", "content": [
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}},
+                {"type": "text", "text": "UI Hierarchy:\n" + page_source_trimmed},
+                {"type": "text", "text": static_block},  # <= injected knowledge
+                {"type": "text", "text": user_query}
+            ]},
         ]
         
         output_text = self.qwen_client.chat_completion(messages, temperature=0.3)

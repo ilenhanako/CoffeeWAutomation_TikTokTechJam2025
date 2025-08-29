@@ -1,7 +1,12 @@
+import base64
+from io import BytesIO
 import json
+from PIL import Image
 from typing import List
 from models.execution_models import EvaluationResult
 from ai_agents.qwen_agent import QwenClient
+from utils.statis_ui_knowledge import STATIC_UI_KB
+from utils.knowledge_block import detect_app
 
 class AIEvaluator:
     
@@ -17,15 +22,16 @@ You get:
 
 Your job:
 1) Decide if the step is DONE (ok=true).
-2) If not done, pick the best recovery and propose 1–3 minimal, actionable suggestions.
+2) If not done, pick exactly 1 minimal, actionable suggestion.
 
 - When deciding ok=true, point to evidence in the current UI:
   - For "open comments" success: a comment panel/sheet or input field is visible (e.g., EditText, hint "Add a comment", icons like send/submit).
-  - For "typed comment": input field contains text and send/submit is available.
+  - For "typed comment": input field MUST contain non-empty user text (ignore placeholders such as "Add a comment", "Write a comment...", "Say something...") AND a send/submit button is visible. 
   - For "share": a share sheet/recipient list is visible.
   - For "liked": the like button is in the "on" state.
 - If evidence is ambiguous or missing, set ok=false.
-- Use both screenshot+bounds hints AND ui_xml_excerpt for verification.
+- Use the screenshot, ui_xml_excerpt, AND static_ui_hints (if present) for verification.
+- static_ui_hints may include typical absolute locations of common controls for the current app/screen size.
 
 Critically distinguish:
 - REQUIRED GATES (e.g., Login, Account creation, OS permission dialogs like Camera/Microphone/Photos): these must be satisfied to progress if they are relevant to the task. Do NOT dismiss them. Return recovery "REQUIRE_AUTH" or "GRANT_PERMISSION" with concrete suggestions (e.g., "Tap 'Log in'", "Tap 'Allow while using the app'").
@@ -60,13 +66,15 @@ If ok=true, set recovery="NONE" and suggestions=[].
     def evaluate_step_outcome(self, business_goal: str, step_description: str,
                              expected_state_hint: str, last_action_args: dict,
                              page_source_xml: str, screenshot_b64: str) -> EvaluationResult:
+        static_hints = self._build_static_hints_for_eval("tiktok", screenshot_b64, business_goal, step_description)
         
         user_payload = {
             "business_goal": business_goal,
             "step_description": step_description,
             "expected_state_hint": expected_state_hint,
             "last_action_args": last_action_args,
-            "ui_xml_excerpt": page_source_xml[:120000],  # Cap to keep requests reasonable
+            "ui_xml_excerpt": page_source_xml[:120000], 
+            "static_ui_hints": static_hints
         }
         
         messages = [
@@ -121,3 +129,34 @@ If ok=true, set recovery="NONE" and suggestions=[].
                 gate_type="NONE",
                 confidence=0.0
             )
+        
+    def _build_static_hints_for_eval(self, app: str, screenshot_b64: str, goal: str, step_desc: str) -> str:
+        # get W,H from b64 to make absolute coordinates
+        try:
+            img = Image.open(BytesIO(base64.b64decode(screenshot_b64.split(",")[-1]))).convert("RGB")
+            W, H = img.size
+        except Exception:
+            W, H = 1080, 1920
+
+        app_key = detect_app(app or "", "", "")  # e.g., "tiktok"
+        kb = STATIC_UI_KB.get(app_key, {})
+        # lightweight intent guess
+        uq = f"{goal} {step_desc}".lower()
+        intents = []
+        for k in ("comment","comments","like","share","profile","mute","close","reply"):
+            if k in uq:
+                intents.append("comment" if k=="comments" else k)
+        if not intents:
+            intents = ["comment","like","share","close"]
+
+        lines = [f"STATIC_UI_HINTS app={app_key} size={W}x{H}"]
+        for key in intents:
+            node = kb.get(key)
+            if not node: 
+                continue
+            abs_pts = [f"({int(x*W)},{int(y*H)})" for (x,y) in node.get("pos", [])]
+            lines.append(f"- {key}: {node.get('desc','')} | typical {', '.join(abs_pts)}")
+        # A tiny policy: presence of right-rail speech bubble means "comment button is available" (not same as "comments open")
+        lines.append("Heuristic: On short-video feeds, a speech-bubble at right-rail typical coords implies the comment BUTTON is present,")
+        lines.append("but SUCCESS for 'open comments' requires the comment PANEL or input field to be visible.")
+        return "\n".join(lines)

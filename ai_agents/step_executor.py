@@ -56,6 +56,21 @@ class StepExecutor:
         
         for cycle in range(1, max_cycles + 1):
             print(f"Step cycle {cycle}/{max_cycles}")
+            # --- PRE-CHECK: is step already satisfied? ---
+            shot = self.screenshot_manager.take_screenshot(driver)
+            b64 = self.screenshot_manager.encode_image(shot)
+            xml = self.driver_manager.get_page_source()
+            pre_eval = self.evaluator.evaluate_step_outcome(
+                business_goal,
+                getattr(step, "description", ""),
+                self._get_expected_hint_from_step(step),
+                {},
+                xml,
+                b64,
+            )
+            if pre_eval.ok:
+                print("✅ Step already satisfied, skipping execution.")
+                return True
             
             # 1) Execute the step
             self.action_processor.execute_enhanced_xml_first(
@@ -182,8 +197,20 @@ class StepExecutor:
             b64_now = self.screenshot_manager.encode_image(screenshot_path)
             decision = self.guard.decide(intr, business_goal, step.description, 
                                        self.driver_manager.get_page_source(), b64_now)
+            normalized_decision = []
+            if isinstance(decision, str):
+                # Wrap natural-language suggestion
+                normalized_decision.append({"action": "query", "query": decision})
+            elif isinstance(decision, dict):
+                normalized_decision.append(decision)
+            elif isinstance(decision, list):
+                for d in decision:
+                    if isinstance(d, str):
+                        normalized_decision.append({"action": "query", "query": d})
+                    elif isinstance(d, dict):
+                        normalized_decision.append(d)
             
-            ok = self.guard.handle(driver, self.action_processor.mobile_use, intr, decision,
+            ok = self.guard.handle(driver, self.action_processor.mobile_use, intr, normalized_decision,
                                  resized_w, resized_h, orig_w, orig_h)
             if ok:
                 time.sleep(0.4)
@@ -201,12 +228,17 @@ class StepExecutor:
     def _actionize_suggestions(self, driver, suggestions: List[str], fallback_query: str = None):
         shot = self.screenshot_manager.take_screenshot(driver)
         for suggestion in (suggestions or []):
-            query = suggestion.strip() or fallback_query
-            if query:
-                print(f"Following suggestion: {query}")
-                self.action_processor.execute_enhanced_xml_first(shot, query)
-                time.sleep(0.25)
-    
+            if isinstance(suggestion, str):
+                query = suggestion.strip() or fallback_query
+                if query:
+                    print(f"Following suggestion: {query}")
+                    # send to Qwen pipeline instead of raw to guard
+                    self.action_processor.execute_enhanced_xml_first(shot, query)
+                    time.sleep(0.25)
+            elif isinstance(suggestion, dict):
+                # Already structured
+                self.action_processor.execute_with_retry(suggestion, self.action_processor.mobile_use)
+        
     def _try_corner_closes(self, driver, attempts: int = 3) -> bool:
         #Try clicking common close button locations
         size = self.driver_manager.get_screen_size()
@@ -252,7 +284,7 @@ class StepExecutor:
         if step.action_type in ("click", "tap"):
             return "Target element reflects clicked state or expected screen appears"
         if step.action_type in ("type", "input"):
-            return "Text field shows the newly typed text"
+            return "Text field contains newly entered text and the send/submit button is enabled"
         if step.action_type in ("swipe", "scroll"):
             return "Content position changed in scrollable region"
         

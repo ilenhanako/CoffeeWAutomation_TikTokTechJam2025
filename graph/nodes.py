@@ -4,7 +4,6 @@ from typing import Dict, Any
 from PIL import Image
 from qwen_vl_utils import smart_resize
 
-# 🔑 placeholders for injected singletons
 driver_manager = None
 screenshot_mgr = None
 processor = None
@@ -24,7 +23,7 @@ def set_dependencies(dm, sm, proc, evalr, grd):
 def node_perceive(state: dict) -> dict:
     driver = driver_manager.get_driver()
     if driver is None:
-        # create session if somehow missing
+        # create session if  missing
         driver = driver_manager.setup_driver()
         driver_manager.wait_for_app_launch(4)
 

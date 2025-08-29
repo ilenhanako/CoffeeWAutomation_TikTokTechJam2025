@@ -47,6 +47,7 @@ TIKTOK UI KNOWLEDGE:
 - Right side UI (top to bottom): Profile pic, Like button, Comment button, Share button
 - Comment button: Speech bubble icon, always visible on video posts
 - To comment: Click comment button → Comment panel opens → Click on the text field → Type in text field → Submit
+- Submit button: triangle icon near comment field to submit
 - Search: Magnifying glass icon at top, opens search screen with text input
 - Navigation: Bottom tabs (Home, Discover, +, Inbox, Profile)
 - Video interactions: Tap to pause/play, swipe up/down to scroll videos
