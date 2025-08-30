@@ -49,7 +49,7 @@ class StepExecutor:
                     "action_type": getattr(step, "action_type", None),
                     "qwen_query": getattr(step, "query_for_qwen", None)
                 },
-                page_source_xml=xml_after,
+                # page_source_xml=xml_after,
                 screenshot_b64=b64,
             )
         
