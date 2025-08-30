@@ -213,3 +213,4 @@ screenshots/
 .vscode/
 .DS_Store
 test-automation/utils/demo_coordinates.py
+test-automation/yolo_detection/test.ipynb

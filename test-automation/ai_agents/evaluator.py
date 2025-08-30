@@ -14,7 +14,6 @@ class AIEvaluator:
     EVAL_SYSTEM_PROMPT = """You are a mobile UI outcome evaluator.
 
 You get:
-- business_goal (what the user ultimately wants)
 - step_description (what this micro-step tries to do)
 - expected_state_hint (what success looks like)
 - last_action_args (optional, what we last tried)
@@ -75,7 +74,7 @@ If ok=true, set recovery="NONE" and suggestions=[].
         static_hints = self._build_static_hints_for_eval("tiktok", screenshot_b64, business_goal, step_description)
         
         user_payload = {
-            "business_goal": business_goal,
+            # "business_goal": business_goal,
             "step_description": step_description,
             "expected_state_hint": expected_state_hint,
             "last_action_args": last_action_args,

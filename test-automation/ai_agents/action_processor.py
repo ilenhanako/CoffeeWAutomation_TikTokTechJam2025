@@ -268,7 +268,7 @@ class ActionProcessor:
                 delay=1.5
             )
             print("Final Appium result:", result)
-            time.sleep(3)
+            time.sleep(4)
             return ActionResult(
                 status=result.get("status", "unknown"),
                 action=action_for_original,
