@@ -107,6 +107,7 @@ class ProfilePage(State):
     
     def __init__(self, **data):
         super().__init__(**data)
+        # ProfilePage-specific components (doesn't inherit from HomePage since it's a different context)
         default_components = [
             UIComponent(name="SettingsButton", component_type=ComponentType.BUTTON),
             UIComponent(name="FollowingList", component_type=ComponentType.DISPLAY),
@@ -114,6 +115,8 @@ class ProfilePage(State):
             UIComponent(name="Likes", component_type=ComponentType.DISPLAY),
             UIComponent(name="FollowButton", component_type=ComponentType.BUTTON),
             UIComponent(name="MessageButton", component_type=ComponentType.BUTTON),
+            # Add common navigation components
+            UIComponent(name="ProfileNavBar", component_type=ComponentType.NAVIGATION),
         ]
         self.components.extend(default_components)
 

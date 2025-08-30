@@ -10,26 +10,28 @@ from .neo4j_knowledge_graph import Neo4jKnowledgeGraph
 def populate_knowledge_graph_from_ontology(kg: Neo4jKnowledgeGraph):
     """Populate Neo4j knowledge graph with states and components from ontology"""
     
-    # Create state instances from ontology
+    # Create base states with their own components
     home_page = HomePage()
-    stem_page = STEMPage()
-    explore_page = ExplorePage()
-    following_page = FollowingPage()
-    friends_page = FriendsPage()
-    for_you_page = ForYouPage()
     profile_page = ProfilePage() 
     settings_page = SettingsPage()
     
-    # Add states to knowledge graph
-    print("Adding states to knowledge graph...")
+    # Add base states to knowledge graph
+    print("Adding base states to knowledge graph...")
     kg.add_state(home_page)
-    kg.add_state(stem_page)
-    kg.add_state(explore_page) 
-    kg.add_state(following_page)
-    kg.add_state(friends_page)
-    kg.add_state(for_you_page)
     kg.add_state(profile_page)
     kg.add_state(settings_page)
+    
+    # Create substate nodes without components (they'll inherit from HomePage)
+    print("Creating substate nodes...")
+    substates = ['STEMPage', 'ExplorePage', 'FollowingPage', 'FriendsPage', 'ForYouPage']
+    
+    with kg.get_session() as session:
+        for substate in substates:
+            session.run("""
+                MERGE (sub:State {name: $substate_name})
+                SET sub.parent = 'HomePage'
+            """, {"substate_name": substate})
+            print(f"  ✓ Created empty {substate} node")
     
     # Add action relationships based on typical app navigation patterns
     print("Adding action relationships...")
@@ -158,15 +160,15 @@ def populate_knowledge_graph_from_ontology(kg: Neo4jKnowledgeGraph):
             }
         )
     
-    # Add swipe actions for general navigation
+    # Add tap actions for navbar navigation (tap to navigate between pages)
     for state_name in ["HomePage", "ProfilePage"]:
         kg.add_action_relationship(
             component_id=f"{state_name}_ProfileNavBar",
-            action_type="swipe",
+            action_type="tap",
             target_state="HomePage" if state_name == "ProfilePage" else "ProfilePage",
             properties={
-                "query_for_qwen": f"Swipe {'right' if state_name == 'ProfilePage' else 'left'} on the navigation bar",
-                "alternative_actions": ["Use back gesture", "Tap navigation buttons"]
+                "query_for_qwen": f"Tap on the navigation bar to go to {'homepage' if state_name == 'ProfilePage' else 'profile page'}",
+                "alternative_actions": ["Swipe on navigation bar", "Use back gesture"]
             }
         )
     
@@ -194,37 +196,8 @@ def populate_knowledge_graph_from_ontology(kg: Neo4jKnowledgeGraph):
         }
     )
     
-    # Add scroll actions for all substates (within each substate's content)
-    substate_mappings = {
-        "STEMPage": "STEM educational content",
-        "ExplorePage": "Explore trending content", 
-        "FollowingPage": "Following users' content",
-        "FriendsPage": "Friends' content",
-        "ForYouPage": "personalized content"
-    }
-    
-    for state_name, content_type in substate_mappings.items():
-        # Like button scroll within each substate
-        kg.add_action_relationship(
-            component_id=f"{state_name}_LikeButton",
-            action_type="scroll",
-            target_state=state_name,
-            properties={
-                "query_for_qwen": f"Scroll through {content_type} to find videos to like",
-                "alternative_actions": ["Swipe up/down to browse videos", "Quick scroll to find content"]
-            }
-        )
-        
-        # Comment button scroll within each substate  
-        kg.add_action_relationship(
-            component_id=f"{state_name}_CommentButton",
-            action_type="scroll",
-            target_state=state_name,
-            properties={
-                "query_for_qwen": f"Scroll through {content_type} to find videos to comment on",
-                "alternative_actions": ["Swipe vertically to browse videos", "Quick scroll to find content"]
-            }
-        )
+    # Note: Substates inherit all HomePage components automatically through inheritance
+    # No need to create separate component relationships for each substate
     
     # ProfilePage scroll actions for browsing user content
     kg.add_action_relationship(
@@ -246,6 +219,38 @@ def populate_knowledge_graph_from_ontology(kg: Neo4jKnowledgeGraph):
             "alternative_actions": ["Swipe vertically through followers"]
         }
     )
+    
+    # Add inheritance relationships for substates  
+    print("Adding inheritance relationships...")
+    # substates list is already defined above
+    
+    with kg.get_session() as session:
+        for substate in substates:
+            # Add inheritance relationship
+            session.run("""
+                MATCH (parent:State {name: 'HomePage'})
+                MATCH (sub:State {name: $substate_name})
+                MERGE (sub)-[:INHERITS_FROM]->(parent)
+            """, {"substate_name": substate})
+            print(f"  ✓ {substate} inherits from HomePage")
+            
+        # Copy HomePage components to all substates for Neo4j graph traversal
+        # (Python inheritance doesn't automatically create Neo4j relationships)
+        print("Copying HomePage components to substates for graph traversal...")
+        for substate in substates:
+            result = session.run("""
+                MATCH (home:State {name: 'HomePage'})-[:HAS_COMPONENT]->(c:Component)
+                MATCH (sub:State {name: $substate_name})
+                WHERE NOT (sub)-[:HAS_COMPONENT]->(c)
+                CREATE (sub)-[:HAS_COMPONENT]->(c)
+                RETURN count(c) as component_count
+            """, {"substate_name": substate})
+            
+            count = result.single()['component_count']
+            if count > 0:
+                print(f"  ✓ Copied {count} components to {substate}")
+            else:
+                print(f"  ✓ {substate} already has all HomePage components")
     
     print("Knowledge graph population completed!")
 
