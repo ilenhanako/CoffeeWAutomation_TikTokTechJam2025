@@ -4,13 +4,70 @@ A GraphRAG-powered system for automated GUI testing of native apps without DOM a
 
 ## Architecture
 
+### End-to-End Workflow
+
 ```
-Business Scenario Query → Vector Search → Knowledge Graph → ExecutorSteps
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐    ┌──────────────────┐
+│ Business        │    │ Semantic Vector  │    │ Knowledge Graph │    │ ExecutorSteps    │
+│ Scenario Query  │───→│ Search           │───→│ Path Finding    │───→│ Generation       │
+│                 │    │ (ChromaDB)       │    │ (Neo4j + BFS)   │    │                  │
+└─────────────────┘    └──────────────────┘    └─────────────────┘    └──────────────────┘
 ```
+
+#### Detailed Flow:
+
+1. **Query Input**: User provides natural language business scenario
+   ```
+   "I want to see someone's followers list from ForYou page"
+   ```
+
+2. **Semantic Search**: ChromaDB finds similar business scenarios using embeddings
+   ```python
+   # Vector similarity search against stored scenarios
+   similar_scenarios = kg.find_similar_business_scenarios(query, top_k=5)
+   # Returns: scenarios with target states, components, and expected actions
+   ```
+
+3. **Guided Graph Analysis**: Similar scenarios inform Neo4j graph traversal
+   ```python
+   # Extract target components/states from similar scenarios
+   target_components = extract_components_from_scenarios(similar_scenarios)
+   target_states = extract_states_from_scenarios(similar_scenarios)
+   
+   # Use these to guide graph path finding
+   paths = kg.find_action_paths(start_state, target_components, target_states)
+   ```
+
+4. **Path Planning**: BFS algorithm finds optimal navigation sequence
+   ```python
+   # Dynamic path chaining for multi-step execution
+   def _find_path_with_bfs(start_state, target_state):
+       # Breadth-first search through graph relationships
+       # Returns complete navigation sequence
+   ```
+
+5. **ExecutorStep Generation**: Convert graph paths to executable test steps
+   ```python
+   ExecutorStep(
+       step_id=1,
+       action_type="swipe", 
+       query_for_qwen="Swipe right on the navigation bar to go to profile",
+       expected_state="ProfilePage"
+   )
+   ```
+
+### GraphRAG Components
 
 1. **Business Scenarios** stored in ChromaDB vector store for semantic search
 2. **Knowledge Graph** in Neo4j containing UI states, components, and action relationships  
-3. **GraphRAG** combines vector search + graph traversal for comprehensive test planning
+3. **Guided Graph Traversal** - similar scenarios inform which components/states to target in the graph
+4. **BFS Path Finding** for dynamic multi-step navigation sequences between identified targets
+5. **LLM Integration** (optional) for enhanced step generation and semantic understanding
+
+#### Key Integration Points:
+- **Vector → Graph**: Similar scenarios provide target components/states for graph search
+- **Graph → Steps**: Neo4j paths converted to executable ExecutorSteps with action details
+- **Feedback Loop**: ExecutorStep success/failure can update scenario embeddings for learning
 
 ## Knowledge Graph Structure
 

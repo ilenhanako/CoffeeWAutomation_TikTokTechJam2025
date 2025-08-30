@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from sentence_transformers import SentenceTransformer
 import chromadb
 import logging
+import os
 from contextlib import contextmanager
 
 from ..models.scenario import BusinessScenario, ScenarioChunk
@@ -22,18 +23,21 @@ class Neo4jKnowledgeGraph:
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
         
-        # Initialize ChromaDB for business scenario vector storage
-        self.chroma_client = chromadb.Client()
-        try:
-            # Force delete and recreate collection to clear cache
-            self.chroma_client.delete_collection("business_scenarios")
-        except Exception:
-            pass  # Collection might not exist
+        # Initialize persistent ChromaDB for business scenario vector storage
+        chroma_db_path = os.path.join(os.path.dirname(__file__), "..", "..", "chroma_db")
+        self.chroma_client = chromadb.PersistentClient(path=chroma_db_path)
         
-        self.scenario_collection = self.chroma_client.create_collection(
-            name="business_scenarios",
-            metadata={"hnsw:space": "cosine"}
-        )
+        try:
+            # Try to get existing collection
+            self.scenario_collection = self.chroma_client.get_collection("business_scenarios")
+            self.logger.info("📚 Using existing business scenarios collection")
+        except Exception:
+            # Create new collection if it doesn't exist
+            self.scenario_collection = self.chroma_client.create_collection(
+                name="business_scenarios",
+                metadata={"hnsw:space": "cosine"}
+            )
+            self.logger.info("📚 Created new business scenarios collection")
         
         # Initialize Neo4j schema
         self._create_constraints_and_indexes()

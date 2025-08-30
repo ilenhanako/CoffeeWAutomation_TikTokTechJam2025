@@ -151,7 +151,7 @@ def interactive_query_mode():
                 for step in plan.steps:
                     print(f"\n  Step {step.step_id}: {step.description}")
                     print(f"    Action Type: {step.action_type}")
-                    print(f"    LLM Query: {step.query_for_qwen}")
+                    print(f"    Description: {step.query_for_qwen}")
                     if step.expected_state:
                         print(f"    Expected Result: {step.expected_state}")
             else:
