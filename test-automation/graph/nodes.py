@@ -67,7 +67,8 @@ def node_evaluate(state: Dict[str, Any]) -> Dict[str, Any]:
         expected_state_hint=state.get("expected_state_hint",
                                       "Screen reflects successful completion of the described step"),
         last_action_args=state.get("exec_action", {}),
-        page_source_xml=state["page_source_xml"],
+        # page_source_xml=state["page_source_xml"],
+        page_source_xml='',
         screenshot_b64=state["screenshot_b64"],
     )
     er = evaluator.evaluate_step_outcome(**payload)

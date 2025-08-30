@@ -1,4 +1,6 @@
+import datetime
 import json
+import os
 import random
 import time
 import difflib
@@ -18,6 +20,7 @@ from qwen_vl_utils import smart_resize
 from tools.mobile_tool import MobileUse
 from models.execution_models import ProcessorConfig
 from utils.knowledge_block import build_static_knowledge_block, detect_app
+from yolo_detection.pre_detection import get_prediction_from_step
 class ActionProcessor:
     
     VALID_MOBILE_ACTIONS = {
@@ -85,6 +88,22 @@ class ActionProcessor:
         return self.process_screenshot_with_qwen(screenshot_path, user_query)
     
     def process_screenshot_with_qwen(self, screenshot_path: str, user_query: str) -> ActionResult:
+        yolo_coord = get_prediction_from_step(screenshot_path, user_query)
+        if yolo_coord:
+            print(f"YOLO matched '{user_query}' → {yolo_coord}")
+            action = {
+                "arguments": {
+                    "action": "click",
+                    "coordinate": [int(yolo_coord[0]), int(yolo_coord[1])]
+                }
+            }
+            result = self.execute_with_retry(action["arguments"], self.mobile_use, retries=3, delay=1.0)
+            return ActionResult(
+                status=result.get("status", "unknown"),
+                action=action,
+                metadata={"detector": "yolo", "result": result}
+            )
+
         if self.demo_coordinator and self.demo_coordinator.should_use_demo_mode(user_query):
             demo_result = self.demo_coordinator.execute_demo_action(user_query)
             if demo_result:

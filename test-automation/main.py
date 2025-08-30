@@ -30,14 +30,12 @@ def main():
     evaluator = AIEvaluator()
     processor_config = ProcessorConfig()
 
-    DEMO_MODE = True
+    DEMO_MODE = False
     
     try:
         print("Setting up Appium driver...")
         driver = driver_manager.setup_driver()
-
-        # driver.save_screenshot("sanity.png")
-        print("Sanity screenshot saved.")
+        time.sleep(10)
 
         screen_size = driver_manager.get_screen_size()
         
@@ -88,7 +86,7 @@ def main():
             guard
         )
         
-        business_goal = 'Like a video on home page'
+        business_goal = 'Comment on a video'
         print(f"Business Goal: {business_goal}")
         step_executor = StepExecutor(driver_manager, action_processor, guard, processor_config)
         
