@@ -19,12 +19,15 @@ class AppConfig:
     PLATFORM_NAME: str = "Android"
     AUTOMATION_NAME: str = "UiAutomator2"
     APP_PACKAGE: str = "com.example.hackathon_test_app"
+    # APP_PACKAGE: str = "com.lynx.explorer"
     APP_ACTIVITY: str = "com.example.hackathon_test_app.MainActivity"
+    # APP_ACTIVITY = "com.lynx.explorer.LynxViewShellActivity"
+
     NEW_COMMAND_TIMEOUT: int = 300
     IMPLICIT_WAIT: int = 10
     
     
-    SCREENSHOT_PATH: str = "current_screen.png"
+    SCREENSHOT_PATH: str = "test-automation/current_screen.png"
     
     
     PATCH_SIZE: int = 14

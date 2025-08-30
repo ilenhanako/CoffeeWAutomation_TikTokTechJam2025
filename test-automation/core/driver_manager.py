@@ -73,3 +73,6 @@ class DriverManager:
         # Relaunch
         driver.activate_app(package)
         driver.implicitly_wait(config.IMPLICIT_WAIT)
+        
+        
+

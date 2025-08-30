@@ -94,7 +94,7 @@ The action to perform. The available actions are:
 
     def call(self, params: Union[str, dict], **kwargs):
         params = self._verify_json_format_args(params)
-        print(f"[DEBUG] MobileUse called with: {params}")
+        # print(f"[DEBUG] MobileUse called with: {params}")
         action = params["action"]
         if action == "key":
             return self._key(params["text"])
@@ -165,7 +165,7 @@ The action to perform. The available actions are:
         try:
             # Find all EditText elements
             text_fields = self.driver.find_elements(AppiumBy.CLASS_NAME, "android.widget.EditText")
-            print(f"[DEBUG] Found {len(text_fields)} EditText elements")
+            # print(f"[DEBUG] Found {len(text_fields)} EditText elements")
             
             if text_fields:
                 field = text_fields[0]  # Use the first one

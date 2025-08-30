@@ -58,16 +58,38 @@ def node_execute(state: Dict[str, Any]) -> Dict[str, Any]:
     out = {"status": getattr(res, "status", None),
            "metadata": getattr(res, "metadata", {}),
            "action": getattr(res, "action", {})}
+    
+    time.sleep(4)
     return {**state, "exec_result": out, "exec_action": out.get("action", {})}
 
 def node_evaluate(state: Dict[str, Any]) -> Dict[str, Any]:
+
+    exec_action = state.get("exec_action", {})
+    action_type = (
+        exec_action.get("action") or
+        exec_action.get("arguments", {}).get("action")
+    )
+
+    if action_type in ("swipe", "scroll"):
+        print("[Evaluator] Skipped for scroll/swipe action.")
+        return {**state, "eval_result": {
+            "ok": True,
+            "reason": "Scroll/swipe executed, evaluation skipped.",
+            "recovery": "NONE",
+            "suggestions": [],
+            "gate_type": "NONE",
+            "confidence": 1.0,
+        }}
+    
     payload = dict(
-        business_goal=state["business_goal"],
+        # business_goal=state["business_goal"],
+        business_goal="",
         step_description=state.get("step_description", state["user_query"]),
         expected_state_hint=state.get("expected_state_hint",
                                       "Screen reflects successful completion of the described step"),
         last_action_args=state.get("exec_action", {}),
-        page_source_xml=state["page_source_xml"],
+        # page_source_xml=state["page_source_xml"],
+        page_source_xml='',
         screenshot_b64=state["screenshot_b64"],
     )
     er = evaluator.evaluate_step_outcome(**payload)
