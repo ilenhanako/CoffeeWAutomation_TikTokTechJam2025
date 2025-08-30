@@ -9,6 +9,8 @@ screenshot_mgr = None
 processor = None
 evaluator = None
 guard = None
+from utils.logging import setup_logger
+logger = setup_logger()
 
 MAX_CYCLES = 3
 
@@ -96,7 +98,9 @@ def node_evaluate(state: Dict[str, Any]) -> Dict[str, Any]:
     print(f"[Evaluator] ok={er.ok} recovery={er.recovery} reason={er.reason}")
     if er.suggestions:
         for s in er.suggestions[:3]:
-            print(f"   Suggestion: {s}")
+            msg =f" Suggestion: {s}"
+            print(msg)
+            logger.info(msg)
     er_dict = {
         "ok": er.ok, "reason": er.reason, "recovery": er.recovery,
         "suggestions": er.suggestions, "gate_type": er.gate_type,
