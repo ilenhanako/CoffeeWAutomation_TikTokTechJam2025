@@ -25,12 +25,15 @@ class Neo4jKnowledgeGraph:
         # Initialize ChromaDB for business scenario vector storage
         self.chroma_client = chromadb.Client()
         try:
-            self.scenario_collection = self.chroma_client.create_collection(
-                name="business_scenarios",
-                metadata={"hnsw:space": "cosine"}
-            )
+            # Force delete and recreate collection to clear cache
+            self.chroma_client.delete_collection("business_scenarios")
         except Exception:
-            self.scenario_collection = self.chroma_client.get_collection("business_scenarios")
+            pass  # Collection might not exist
+        
+        self.scenario_collection = self.chroma_client.create_collection(
+            name="business_scenarios",
+            metadata={"hnsw:space": "cosine"}
+        )
         
         # Initialize Neo4j schema
         self._create_constraints_and_indexes()

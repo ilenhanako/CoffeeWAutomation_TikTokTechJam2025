@@ -34,23 +34,72 @@ class HomePage(State):
     
     def __init__(self, **data):
         super().__init__(**data)
-        # Add default components from ontology
-        default_components = [
+        # Set child states (substates of HomePage)
+        self.child_states = ["STEMPage", "ExplorePage", "FollowingPage", "FriendsPage", "ForYouPage"]
+        
+        # Add base HomePage components
+        self._add_base_components()
+    
+    def _add_base_components(self):
+        """Add the base components that all HomePage substates inherit"""
+        base_components = [
             UIComponent(name="LikeButton", component_type=ComponentType.BUTTON),
             UIComponent(name="ProfileNavBar", component_type=ComponentType.NAVIGATION),
             UIComponent(name="UserButton", component_type=ComponentType.BUTTON),
             UIComponent(name="CommentButton", component_type=ComponentType.BUTTON),
             UIComponent(name="ShareButton", component_type=ComponentType.BUTTON),
             UIComponent(name="SearchButton", component_type=ComponentType.BUTTON),
+            UIComponent(name="Search", component_type=ComponentType.INPUT),
+            # Tab navigation components
             UIComponent(name="LIVE", component_type=ComponentType.NAVIGATION),
-            UIComponent(name="STEM", component_type=ComponentType.NAVIGATION),
+            UIComponent(name="STEM", component_type=ComponentType.NAVIGATION), 
             UIComponent(name="Explore", component_type=ComponentType.NAVIGATION),
             UIComponent(name="Following", component_type=ComponentType.NAVIGATION),
             UIComponent(name="Friends", component_type=ComponentType.NAVIGATION),
             UIComponent(name="ForYou", component_type=ComponentType.NAVIGATION),
-            UIComponent(name="Search", component_type=ComponentType.INPUT),
         ]
-        self.components.extend(default_components)
+        self.components.extend(base_components)
+
+
+# HomePage substates - inherit components from HomePage
+class STEMPage(HomePage):
+    name: str = "STEMPage"
+    
+    def __init__(self, **data):
+        super().__init__(**data)  # This calls HomePage.__init__ which adds base components
+        self.parent_state = "HomePage"
+
+
+class ExplorePage(HomePage):
+    name: str = "ExplorePage"
+    
+    def __init__(self, **data):
+        super().__init__(**data)  # Inherits all HomePage components
+        self.parent_state = "HomePage"
+
+
+class FollowingPage(HomePage):
+    name: str = "FollowingPage"
+    
+    def __init__(self, **data):
+        super().__init__(**data)  # Inherits all HomePage components
+        self.parent_state = "HomePage"
+
+
+class FriendsPage(HomePage):
+    name: str = "FriendsPage"
+    
+    def __init__(self, **data):
+        super().__init__(**data)  # Inherits all HomePage components
+        self.parent_state = "HomePage"
+
+
+class ForYouPage(HomePage):
+    name: str = "ForYouPage"
+    
+    def __init__(self, **data):
+        super().__init__(**data)  # Inherits all HomePage components
+        self.parent_state = "HomePage"
 
 
 class ProfilePage(State):
@@ -60,8 +109,8 @@ class ProfilePage(State):
         super().__init__(**data)
         default_components = [
             UIComponent(name="SettingsButton", component_type=ComponentType.BUTTON),
-            UIComponent(name="Following", component_type=ComponentType.DISPLAY),
-            UIComponent(name="Followers", component_type=ComponentType.DISPLAY),
+            UIComponent(name="FollowingList", component_type=ComponentType.DISPLAY),
+            UIComponent(name="FollowersList", component_type=ComponentType.DISPLAY),
             UIComponent(name="Likes", component_type=ComponentType.DISPLAY),
             UIComponent(name="FollowButton", component_type=ComponentType.BUTTON),
             UIComponent(name="MessageButton", component_type=ComponentType.BUTTON),

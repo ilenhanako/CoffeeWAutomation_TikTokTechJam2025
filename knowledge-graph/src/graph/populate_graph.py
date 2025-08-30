@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
-from ..models.ontology import HomePage, ProfilePage, SettingsPage
+from ..models.ontology import (
+    HomePage, STEMPage, ExplorePage, FollowingPage, FriendsPage, ForYouPage,
+    ProfilePage, SettingsPage
+)
 from .neo4j_knowledge_graph import Neo4jKnowledgeGraph
 
 
@@ -9,12 +12,22 @@ def populate_knowledge_graph_from_ontology(kg: Neo4jKnowledgeGraph):
     
     # Create state instances from ontology
     home_page = HomePage()
+    stem_page = STEMPage()
+    explore_page = ExplorePage()
+    following_page = FollowingPage()
+    friends_page = FriendsPage()
+    for_you_page = ForYouPage()
     profile_page = ProfilePage() 
     settings_page = SettingsPage()
     
     # Add states to knowledge graph
     print("Adding states to knowledge graph...")
     kg.add_state(home_page)
+    kg.add_state(stem_page)
+    kg.add_state(explore_page) 
+    kg.add_state(following_page)
+    kg.add_state(friends_page)
+    kg.add_state(for_you_page)
     kg.add_state(profile_page)
     kg.add_state(settings_page)
     
@@ -72,15 +85,23 @@ def populate_knowledge_graph_from_ontology(kg: Neo4jKnowledgeGraph):
         }
     )
     
-    # Navigation between feed sections
-    for section in ["STEM", "Explore", "Following", "Friends", "ForYou"]:
+    # Navigation between feed sections - TAP on tabs navigates to specific substates
+    tab_mappings = {
+        "STEM": "STEMPage",
+        "Explore": "ExplorePage", 
+        "Following": "FollowingPage",
+        "Friends": "FriendsPage",
+        "ForYou": "ForYouPage"
+    }
+    
+    for tab_name, target_state in tab_mappings.items():
         kg.add_action_relationship(
-            component_id=f"HomePage_{section}",
+            component_id=f"HomePage_{tab_name}",
             action_type="tap",
-            target_state="HomePage",  # Same state, different content
+            target_state=target_state,
             properties={
-                "query_for_qwen": f"Tap on the {section} tab in the feed navigation",
-                "alternative_actions": [f"Swipe horizontally to {section} section"]
+                "query_for_qwen": f"Tap on the {tab_name} tab in the feed navigation",
+                "alternative_actions": [f"Swipe horizontally to {tab_name} section"]
             }
         )
     
@@ -173,21 +194,41 @@ def populate_knowledge_graph_from_ontology(kg: Neo4jKnowledgeGraph):
         }
     )
     
-    # Add scroll for feed sections
-    for section in ["STEM", "Explore", "Following", "Friends", "ForYou"]:
+    # Add scroll actions for all substates (within each substate's content)
+    substate_mappings = {
+        "STEMPage": "STEM educational content",
+        "ExplorePage": "Explore trending content", 
+        "FollowingPage": "Following users' content",
+        "FriendsPage": "Friends' content",
+        "ForYouPage": "personalized content"
+    }
+    
+    for state_name, content_type in substate_mappings.items():
+        # Like button scroll within each substate
         kg.add_action_relationship(
-            component_id=f"HomePage_{section}",
+            component_id=f"{state_name}_LikeButton",
             action_type="scroll",
-            target_state="HomePage",
+            target_state=state_name,
             properties={
-                "query_for_qwen": f"Scroll through the {section} feed to browse content",
-                "alternative_actions": [f"Swipe vertically in {section} section", "Quick scroll to find videos"]
+                "query_for_qwen": f"Scroll through {content_type} to find videos to like",
+                "alternative_actions": ["Swipe up/down to browse videos", "Quick scroll to find content"]
+            }
+        )
+        
+        # Comment button scroll within each substate  
+        kg.add_action_relationship(
+            component_id=f"{state_name}_CommentButton",
+            action_type="scroll",
+            target_state=state_name,
+            properties={
+                "query_for_qwen": f"Scroll through {content_type} to find videos to comment on",
+                "alternative_actions": ["Swipe vertically to browse videos", "Quick scroll to find content"]
             }
         )
     
     # ProfilePage scroll actions for browsing user content
     kg.add_action_relationship(
-        component_id="ProfilePage_Following",
+        component_id="ProfilePage_FollowingList",
         action_type="scroll",
         target_state="ProfilePage",
         properties={
@@ -197,7 +238,7 @@ def populate_knowledge_graph_from_ontology(kg: Neo4jKnowledgeGraph):
     )
     
     kg.add_action_relationship(
-        component_id="ProfilePage_Followers", 
+        component_id="ProfilePage_FollowersList", 
         action_type="scroll",
         target_state="ProfilePage",
         properties={
