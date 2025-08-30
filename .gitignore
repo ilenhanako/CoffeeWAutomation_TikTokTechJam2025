@@ -210,3 +210,5 @@ __marimo__/
 
 page_dumps/
 screenshots/
+.vscode/
+.DS_Store
