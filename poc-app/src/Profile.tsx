@@ -27,14 +27,12 @@ function Profile() {
         />
       </view>
 
-      {/* Profile header */}
       <view className="profile-header">
         <image src={profile.avatar} className="profile-avatar" />
         <text className="profile-username">@{profile.username}</text>
         <text className="profile-bio">{profile.bio}</text>
       </view>
 
-      {/* Stats */}
       <view className="profile-stats">
         <view className="stat-item">
           <text className="stat-value">5k</text>
@@ -49,15 +47,12 @@ function Profile() {
           <text className="stat-label">Likes</text>
         </view>
       </view>
-
-      {/* Action buttons */}
       <view className="profile-actions">
         <text className="profile-btn" bindtap={() => navigate("/edit")}>
           Edit
         </text>
       </view>
 
-      {/* Video grid */}
       <scroll-view className="video-grid" scroll-orientation="vertical">
         <view className="video-row">
           <image src={thumbnail1} className="video-thumb" />
