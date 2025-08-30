@@ -4,6 +4,9 @@ def setup_logger(log_file="automation.log"):
     logger = logging.getLogger("automation")
     logger.setLevel(logging.INFO)
 
+    if logger.hasHandlers():
+        logger.handlers.clear()
+
     # Console handler (stdout)
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
