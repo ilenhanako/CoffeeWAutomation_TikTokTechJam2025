@@ -147,7 +147,7 @@ class AutomationService:
         try:
             status_endpoint = f"{settings.automation.base_url}/status/{execution_id}"
             
-            response = requests.get(status_endpoint, timeout=10)
+            response = requests.get(status_endpoint, timeout=settings.automation.health_check_timeout)
             response.raise_for_status()
             
             return True, response.json()
@@ -155,3 +155,55 @@ class AutomationService:
         except Exception as e:
             logger.error(f"Error getting execution status: {e}")
             return False, {"error": str(e)}
+    
+    @staticmethod
+    def get_execution_logs(execution_id: str) -> Tuple[bool, str]:
+        """
+        Get logs for a completed execution
+        
+        Args:
+            execution_id: ID of the execution
+            
+        Returns:
+            Tuple of (success, logs_content)
+        """
+        try:
+            logs_endpoint = f"{settings.automation.base_url}/logs/{execution_id}"
+            
+            response = requests.get(
+                logs_endpoint,
+                timeout=settings.automation.timeout
+            )
+            response.raise_for_status()
+            
+            return True, response.text
+            
+        except Exception as e:
+            logger.error(f"Error getting execution logs: {e}")
+            return False, f"Error retrieving logs: {str(e)}"
+    
+    @staticmethod
+    def get_execution_screenshot(execution_id: str) -> Tuple[bool, bytes]:
+        """
+        Get final screenshot for a completed execution
+        
+        Args:
+            execution_id: ID of the execution
+            
+        Returns:
+            Tuple of (success, screenshot_bytes)
+        """
+        try:
+            screenshot_endpoint = f"{settings.automation.base_url}/screenshot/{execution_id}"
+            
+            response = requests.get(
+                screenshot_endpoint,
+                timeout=settings.automation.timeout
+            )
+            response.raise_for_status()
+            
+            return True, response.content
+            
+        except Exception as e:
+            logger.error(f"Error getting execution screenshot: {e}")
+            return False, b""

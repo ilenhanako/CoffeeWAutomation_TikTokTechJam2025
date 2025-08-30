@@ -16,12 +16,42 @@ class StreamlitLogHandler(logging.Handler):
         """Emit a log record to Streamlit"""
         try:
             msg = self.format(record)
+            
+            # Skip routine startup, processing, and cleanup messages to reduce UI noise
+            skip_messages = [
+                "Starting GUI Testing Tool",
+                "Connecting to Neo4j",
+                "Database connection established",
+                "Found existing business scenarios",
+                "Application initialized successfully",
+                "Business scenarios loaded",
+                "Database connection closed",
+                "Reset connection state",
+                "Application cleanup completed",
+                "Slow function",  # Performance timing messages
+                "Generating test steps for query",  # Test generation process
+                "Successfully generated test plan",  # Test generation success
+                "Generated",  # General generation messages
+                "Loading business scenarios into ChromaDB",
+                "Refreshing database connection",
+                "Connection refresh completed",
+                "Connection test successful",
+                "Cleared graph data cache",
+                "Cleared",  # Cache clearing messages
+                "Application interrupted by user"
+            ]
+            
+            if any(skip_msg in msg for skip_msg in skip_messages):
+                return  # Don't show these routine startup messages
+            
             if record.levelno >= logging.ERROR:
-                st.error(f"🚨 {msg}")
+                st.error(f"❌ {msg}")
             elif record.levelno >= logging.WARNING:
                 st.warning(f"⚠️ {msg}")
             elif record.levelno >= logging.INFO:
-                st.info(f"ℹ️ {msg}")
+                # Only show important INFO messages, not routine ones
+                if any(important in msg.lower() for important in ['error', 'failed', 'success', 'completed']):
+                    st.info(f"ℹ️ {msg}")
             else:
                 st.text(msg)
         except Exception:

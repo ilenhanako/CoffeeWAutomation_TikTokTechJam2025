@@ -96,20 +96,6 @@ class UIComponents:
         
         expected_result = step.expected_state if step.expected_state else "Stay in current state"
         
-        # Format alternative actions if they exist
-        alternative_actions_html = ""
-        if hasattr(step, 'alternative_actions') and step.alternative_actions:
-            # Filter out empty strings
-            alt_actions = [action for action in step.alternative_actions if action.strip()]
-            if alt_actions:
-                alternative_actions_html = f"""
-                <div style='margin-top: 10px; color: {settings.ui.text_color}; font-size: 13px;'>
-                    <strong>Alternative Actions:</strong>
-                    <ul style='margin: 5px 0 0 20px; color: {settings.ui.grey_color if hasattr(settings.ui, 'grey_color') else '#888888'};'>
-                        {''.join([f'<li>{action}</li>' for action in alt_actions])}
-                    </ul>
-                </div>
-                """
         
         step_content = f"""
         <div style='margin: 15px 0; padding: 15px; background-color: {settings.ui.card_background}; 
@@ -129,7 +115,6 @@ class UIComponents:
             <div style='margin-top: 10px; color: {border_color}; font-size: 14px;'>
                 <strong>Expected:</strong> <span style='color: {settings.ui.text_color};'>{expected_result}</span>
             </div>
-            {alternative_actions_html}
         </div>
         """
         

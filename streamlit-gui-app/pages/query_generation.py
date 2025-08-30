@@ -3,12 +3,11 @@ Query and Test Generation page module
 """
 
 import streamlit as st
-import time
 from utils.ui_components import UIComponents
 from utils.session_manager import SessionManager
 from services.scenario_service import ScenarioService
 from services.automation_service import AutomationService
-from utils.websocket_manager import StreamlitWebSocketMonitor
+from utils.status_monitor import StreamlitStatusMonitor
 from utils.caching import PerformanceMonitor
 from utils.logging_config import logger
 
@@ -53,14 +52,13 @@ class QueryGenerationPage:
             
             # Advanced options
             with st.expander("Advanced Options"):
-                debug_mode = st.checkbox("Show Debug Info", False, key="debug_mode")
-                SessionManager.set('debug_mode', debug_mode)
+                st.checkbox("Show Debug Info", False, key="debug_mode")
         
         # Execute button and status
-        QueryGenerationPage._render_execution_controls(query, start_state)
+        QueryGenerationPage._render_query_execution_controls(query, start_state)
     
     @staticmethod
-    def _render_execution_controls(query: str, start_state: str):
+    def _render_query_execution_controls(query: str, start_state: str):
         """Render execution controls and handle query processing"""
         col_btn, col_status = st.columns([1, 1])
         
@@ -90,7 +88,7 @@ class QueryGenerationPage:
                 logger.info(f"Successfully generated test plan: {scenario_plan.scenario_title}")
                 
                 # Show debug info if enabled
-                if SessionManager.get('debug_mode'):
+                if st.session_state.get('debug_mode', False):
                     QueryGenerationPage._show_debug_info(query, start_state, scenario_plan)
             
             else:
@@ -174,9 +172,9 @@ class QueryGenerationPage:
         st.markdown("---")
         
         # Execution section header
-        st.markdown(f"""
+        st.markdown("""
         <div style='color: #25F4EE; font-size: 20px; font-weight: bold; margin: 20px 0;'>
-            🚀 Execute Automation
+            🚀 Execute Automation Testing
         </div>
         """, unsafe_allow_html=True)
         
@@ -201,10 +199,10 @@ class QueryGenerationPage:
             )
         
         with col3:
-            monitor_mode = st.checkbox(
-                "Real-time Monitoring", 
+            show_monitoring = st.checkbox(
+                "Show Status Monitoring", 
                 value=True,
-                help="Show live logs and screenshots during execution"
+                help="Display execution status after starting automation"
             )
         
         # Execute button
@@ -226,16 +224,17 @@ class QueryGenerationPage:
             QueryGenerationPage._handle_automation_execution(
                 current_plan, 
                 start_state, 
-                monitor_mode, 
+                show_monitoring, 
                 status_placeholder
             )
         
-        # Show monitoring UI if monitoring is enabled
-        if monitor_mode and SessionManager.get('automation_running', False):
-            QueryGenerationPage._render_monitoring_ui()
+        # Show monitoring UI if monitoring is enabled and execution is active
+        current_execution_id = SessionManager.get('current_execution_id')
+        if show_monitoring and current_execution_id:
+            StreamlitStatusMonitor.render_execution_status(current_execution_id)
     
     @staticmethod
-    def _handle_automation_execution(current_plan, start_state: str, monitor_mode: bool, status_placeholder):
+    def _handle_automation_execution(current_plan, start_state: str, show_monitoring: bool, status_placeholder):
         """Handle automation execution"""
         with st.spinner("Starting automation execution..."):
             # Execute the scenario
@@ -243,18 +242,12 @@ class QueryGenerationPage:
             
             if success:
                 status_placeholder.success(message)
-                SessionManager.set('automation_running', True)
-                SessionManager.set('current_execution_id', response_data.get('execution_id'))
+                execution_id = response_data.get('execution_id')
+                SessionManager.set('current_execution_id', execution_id)
                 
-                # Initialize monitoring if enabled
-                if monitor_mode:
-                    ws_manager = StreamlitWebSocketMonitor.start_monitoring_for_execution(
-                        response_data.get('execution_id')
-                    )
-                    
-                # Show monitoring UI
-                if monitor_mode:
-                    st.rerun()  # Refresh to show monitoring UI
+                # Refresh to show monitoring UI if enabled
+                if show_monitoring:
+                    st.rerun()
                     
             else:
                 status_placeholder.error(message)
@@ -277,34 +270,3 @@ class QueryGenerationPage:
                     4. **Dependencies**: Ensure all automation dependencies are installed
                     """)
     
-    @staticmethod
-    def _render_monitoring_ui():
-        """Render the monitoring UI for running automation"""
-        if not SessionManager.get('automation_running', False):
-            return
-            
-        st.markdown("---")
-        st.markdown(f"""
-        <div style='color: #25F4EE; font-size: 18px; font-weight: bold; margin: 20px 0;'>
-            📊 Live Monitoring
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Create two columns for logs and screenshots
-        col_logs, col_screenshot = st.columns([3, 2])
-        
-        # Get or create WebSocket manager
-        ws_manager = StreamlitWebSocketMonitor.initialize_websocket_in_session()
-        
-        # Render monitoring UI
-        StreamlitWebSocketMonitor.render_monitoring_ui(ws_manager, col_logs, col_screenshot)
-        
-        # Auto-refresh for real-time updates
-        if ws_manager.is_connected:
-            # Add a refresh button for manual updates
-            if st.button("🔄 Refresh Monitoring", key="refresh_monitoring"):
-                st.rerun()
-                
-            # Auto-refresh every 2 seconds when running
-            time.sleep(2)
-            st.rerun()

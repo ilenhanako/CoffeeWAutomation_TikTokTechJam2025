@@ -22,8 +22,7 @@ class SessionManager:
             'neo4j_user': "neo4j", 
             'neo4j_pass': "tiktoktechjam",
             'planning_agent_data': None,
-            'execution_data': None,
-            'debug_mode': False
+            'execution_data': None
         }
         
         for key, default_value in defaults.items():
