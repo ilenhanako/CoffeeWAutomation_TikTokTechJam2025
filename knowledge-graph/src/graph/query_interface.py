@@ -37,21 +37,220 @@ class GraphQueryInterface:
         best_scenario = similar_scenarios[0]
         goal = best_scenario['metadata'].get('goal', query)
         
-        # Step 3: Find action paths in knowledge graph
-        # For now, find paths from start_state to any reachable state
-        paths = self.kg.find_action_paths(start_state, max_depth=3)
+        # Step 3: Extract keywords from query to find relevant paths
+        query_keywords = self._extract_keywords(query)
+        print(f"🎯 Extracted keywords: {query_keywords}")
         
-        if not paths:
-            print(f"⚠️  No action paths found from {start_state}")
-            return ScenarioPlan(scenario_id=1, scenario_title=goal, steps=[])
+        # Step 4: Find paths that reach the target (state or component)
+        target_info = self._determine_target_state_or_component(query_keywords, query)
+        print(f"🎯 Target: {target_info}")
         
-        print(f"🛤️  Found {len(paths)} possible action paths")
-        
-        # Step 4: Generate ExecutorSteps from paths
-        scenario_plan = self.kg.generate_executor_steps_from_paths(paths, goal)
+        if target_info['type'] == 'component':
+            # Target is a component within a state - need multi-step path
+            target_state = target_info['parent_state']
+            target_component = target_info['component']
+            
+            # Find path to the state containing the component
+            if target_state != start_state:
+                state_paths = self.kg.find_action_paths(start_state, target_state, max_depth=4)
+                if state_paths:
+                    print(f"🛤️  Found path to {target_state}, will add component access")
+                    scenario_plan = self._generate_multi_step_plan_with_component(state_paths[0], target_component, goal)
+                else:
+                    print(f"⚠️  No path found to {target_state} for component {target_component}")
+                    return ScenarioPlan(scenario_id=1, scenario_title=goal, steps=[])
+            else:
+                # Component is in current state
+                print(f"🛤️  Target component {target_component} is in current state {start_state}")
+                scenario_plan = self._generate_single_component_step(start_state, target_component, goal)
+                
+        elif target_info['type'] == 'state':
+            # Target is a state - need path to that state
+            target_state = target_info['state']
+            if target_state != start_state:
+                state_paths = self.kg.find_action_paths(start_state, target_state, max_depth=4)
+                if state_paths:
+                    print(f"🛤️  Found {len(state_paths)} paths to {target_state}")
+                    scenario_plan = self._generate_multi_step_plan_from_path(state_paths[0], goal)
+                else:
+                    print(f"⚠️  No path found to {target_state}")
+                    return ScenarioPlan(scenario_id=1, scenario_title=goal, steps=[])
+            else:
+                print(f"🛤️  Already at target state {target_state}")
+                return ScenarioPlan(scenario_id=1, scenario_title=goal, steps=[])
+        else:
+            # Fallback to keyword-based search
+            relevant_paths = self.find_paths_to_goal(start_state, query_keywords)
+            if not relevant_paths:
+                print(f"⚠️  No relevant paths found for keywords: {query_keywords}")
+                return ScenarioPlan(scenario_id=1, scenario_title=goal, steps=[])
+            
+            print(f"🛤️  Found {len(relevant_paths)} relevant action paths")
+            scenario_plan = self.kg.generate_executor_steps_from_paths([relevant_paths[0]], goal)
         
         print(f"✅ Generated plan with {len(scenario_plan.steps)} steps")
         return scenario_plan
+    
+    def _extract_keywords(self, text: str) -> List[str]:
+        """Extract keywords from query text"""
+        text = text.lower()
+        keywords = []
+        
+        # Define keyword mappings
+        keyword_mappings = {
+            'settings': ['settings', 'preferences', 'config', 'options', 'update', 'modify', 'change', 'edit', 'username', 'name', 'bio', 'links'],
+            'profile': ['profile', 'account', 'personal'],
+            'like': ['like', 'heart', 'favorite'],
+            'comment': ['comment', 'reply', 'respond'],
+            'share': ['share', 'send', 'forward'],
+            'follow': ['follow', 'subscribe', 'connect'],
+            'navigate': ['navigate', 'go', 'move', 'switch'],
+            'home': ['home', 'homepage', 'main'],
+            'stem': ['stem', 'education'],
+            'explore': ['explore', 'discover', 'trending'],
+            'following': ['following', 'feed'],
+            'friends': ['friends', 'social']
+        }
+        
+        # Extract keywords
+        for keyword, synonyms in keyword_mappings.items():
+            if any(synonym in text for synonym in synonyms):
+                keywords.append(keyword)
+        
+        return keywords if keywords else ['navigate']  # Default fallback
+    
+    def _determine_target_state_or_component(self, keywords: List[str], query: str) -> Dict[str, Any]:
+        """Determine if target is a state or component within a state"""
+        query_lower = query.lower()
+        
+        # Check for specific components first
+        component_mappings = {
+            'followerslist': {'type': 'component', 'component': 'FollowersList', 'parent_state': 'ProfilePage'},
+            'followinglist': {'type': 'component', 'component': 'FollowingList', 'parent_state': 'ProfilePage'},
+            'followers': {'type': 'component', 'component': 'FollowersList', 'parent_state': 'ProfilePage'},
+            'following': {'type': 'component', 'component': 'FollowingList', 'parent_state': 'ProfilePage'},
+            'username': {'type': 'component', 'component': 'UserNameInput', 'parent_state': 'SettingsPage'},
+            'name': {'type': 'component', 'component': 'NameInput', 'parent_state': 'SettingsPage'},
+            'bio': {'type': 'component', 'component': 'BioInput', 'parent_state': 'SettingsPage'},
+            'links': {'type': 'component', 'component': 'LinksInput', 'parent_state': 'SettingsPage'},
+            'likebutton': {'type': 'component', 'component': 'LikeButton', 'parent_state': 'HomePage'},
+            'commentbutton': {'type': 'component', 'component': 'CommentButton', 'parent_state': 'HomePage'},
+            'sharebutton': {'type': 'component', 'component': 'ShareButton', 'parent_state': 'HomePage'},
+        }
+        
+        # Check if query mentions specific components
+        for component_key, info in component_mappings.items():
+            if component_key in query_lower:
+                return info
+        
+        # Check for state-level targets
+        state_mappings = {
+            'settings': {'type': 'state', 'state': 'SettingsPage'},
+            'profile': {'type': 'state', 'state': 'ProfilePage'},
+            'home': {'type': 'state', 'state': 'HomePage'},
+        }
+        
+        for keyword in keywords:
+            if keyword in state_mappings:
+                return state_mappings[keyword]
+        
+        # Default fallback
+        return {'type': 'unknown'}
+    
+    def _generate_multi_step_plan_from_path(self, path: Dict[str, Any], goal: str) -> ScenarioPlan:
+        """Generate multi-step ExecutorSteps from a Neo4j path"""
+        from ..models.ontology import ExecutorStep
+        
+        nodes = path.get('nodes', [])
+        actions = path.get('actions', [])
+        
+        # Debug logging
+        print(f"🔍 Path structure debug:")
+        print(f"  Nodes: {[node.get('name', node.get('id', 'unknown')) for node in nodes]}")
+        print(f"  Actions: {actions}")
+        print(f"  Node details: {[(i, node.keys()) for i, node in enumerate(nodes)]}")
+        
+        if len(nodes) < 3:  # Need at least start -> component -> end
+            return self.kg.generate_executor_steps_from_paths([path], goal)
+        
+        steps = []
+        step_id = 1
+        
+        # Process path: identify components and their actions
+        # Path structure: [StartState, Component1, MiddleState, Component2, EndState]
+        # Actions structure: ['HAS_COMPONENT', 'TAP', 'HAS_COMPONENT', 'SWIPE']
+        
+        # Find actual action relationships and their corresponding components
+        for i in range(len(actions)):
+            if actions[i] in ['TAP', 'SWIPE', 'SCROLL', 'TYPE']:
+                # The component is the node before this action
+                # Find the component node that corresponds to this action
+                
+                # In a typical path: State -> (HAS_COMPONENT) -> Component -> (ACTION) -> State
+                # The component should be at index i (same as action index for component actions)
+                if i < len(nodes):
+                    component = nodes[i]
+                    action_type = actions[i]
+                    
+                    # Find the target state (next state node after this action)
+                    end_state = None
+                    for j in range(i + 1, len(nodes)):
+                        if nodes[j].get('name') and not nodes[j].get('id'):  # State nodes don't have 'id', components do
+                            end_state = nodes[j]
+                            break
+                    
+                    # Only process if we have a component (should have 'id' field)
+                    if component.get('id') or 'Button' in component.get('name', '') or 'Input' in component.get('name', '') or 'NavBar' in component.get('name', ''):
+                        component_name = component.get('name', 'component')
+                        description = f"{action_type.capitalize()} {component_name}"
+                        
+                        step = ExecutorStep(
+                            step_id=step_id,
+                            description=description,
+                            action_type=action_type.lower(),
+                            query_for_qwen=f"{action_type.capitalize()} on the {component_name.lower()}",
+                            alternative_actions=[f"Long press {component_name.lower()}", f"Alternative {action_type.lower()} action"],
+                            expected_state=end_state.get('name') if end_state else None
+                        )
+                        steps.append(step)
+                        step_id += 1
+        
+        return ScenarioPlan(scenario_id=1, scenario_title=goal, steps=steps)
+    
+    def _generate_multi_step_plan_with_component(self, state_path: Dict[str, Any], target_component: str, goal: str) -> ScenarioPlan:
+        """Generate multi-step plan: navigate to state + access component"""
+        from ..models.ontology import ExecutorStep
+        
+        # First get steps to reach the state
+        state_plan = self._generate_multi_step_plan_from_path(state_path, goal)
+        
+        # Then add step to access the target component
+        final_step = ExecutorStep(
+            step_id=len(state_plan.steps) + 1,
+            description=f"Tap {target_component}",
+            action_type='tap',
+            query_for_qwen=f"Tap on the {target_component.lower()} to access it",
+            alternative_actions=[f"Long press {target_component.lower()}", f"Swipe to access {target_component.lower()}"],
+            expected_state=None  # Component access doesn't change state
+        )
+        
+        state_plan.steps.append(final_step)
+        return state_plan
+    
+    def _generate_single_component_step(self, current_state: str, target_component: str, goal: str) -> ScenarioPlan:
+        """Generate single step to access component in current state"""
+        from ..models.ontology import ExecutorStep
+        
+        step = ExecutorStep(
+            step_id=1,
+            description=f"Tap {target_component}",
+            action_type='tap',
+            query_for_qwen=f"Tap on the {target_component.lower()}",
+            alternative_actions=[f"Long press {target_component.lower()}", f"Swipe to access {target_component.lower()}"],
+            expected_state=current_state  # Stay in same state
+        )
+        
+        return ScenarioPlan(scenario_id=1, scenario_title=goal, steps=[step])
     
     def find_paths_to_goal(self, start_state: str, goal_keywords: List[str]) -> List[Dict[str, Any]]:
         """Find paths from start state that might achieve the goal"""

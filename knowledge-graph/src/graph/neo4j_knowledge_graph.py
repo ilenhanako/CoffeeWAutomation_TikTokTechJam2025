@@ -144,10 +144,20 @@ class Neo4jKnowledgeGraph:
         """Find all possible action paths from start state to end state"""
         with self.get_session() as session:
             if end_state:
+                # Try direct path first
                 query = """
                     MATCH path = (start:State {name: $start_state})-[:HAS_COMPONENT]->(c:Component)
                              -[action:TAP|SWIPE|SCROLL|TYPE]->(end:State {name: $end_state})
                     RETURN path, 
+                           [rel in relationships(path) | type(rel)] as actions,
+                           [node in nodes(path) | node] as nodes
+                    UNION
+                    MATCH path = (start:State {name: $start_state})-[:HAS_COMPONENT]->(c1:Component)
+                             -[a1:TAP|SWIPE|SCROLL|TYPE]->(mid:State)
+                             -[:HAS_COMPONENT]->(c2:Component)
+                             -[a2:TAP|SWIPE|SCROLL|TYPE]->(end:State {name: $end_state})
+                    WHERE start.name <> end.name
+                    RETURN path,
                            [rel in relationships(path) | type(rel)] as actions,
                            [node in nodes(path) | node] as nodes
                     LIMIT 20
