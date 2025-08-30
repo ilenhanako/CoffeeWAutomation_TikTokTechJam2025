@@ -1,5 +1,5 @@
 .top-nav {
-  position: fixed; /* or absolute */
+  position: fixed;
   top:30px;
   left: 0;
   right: 0;
@@ -10,19 +10,19 @@
   background-color: transparent;
   color: white;
   z-index: 1000;
-  padding: 0 16px; /* instead of padding-top */
+  padding: 0 16px;
 }
 
 
 .top-nav-side {
-  flex: 0 0 15%; /* fixed ratio for images */
+  flex: 0 0 15%;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .top-nav-center {
-  flex: 0 0 70%; /* middle section */
+  flex: 0 0 70%;
 }
 
 .top-nav-scroll {
@@ -36,11 +36,11 @@
 }
 
 .liveTV-icon-image{
-  width: 20px;
-  height: 20px;
+  width: 25px;
+  height: 25px;
 }
 
 .search-icon-image{
-  width: 20px;
-  height: 20px;
+  width: 25px;
+  height: 25px;
 }

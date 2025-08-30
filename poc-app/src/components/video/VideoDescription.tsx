@@ -1,5 +1,4 @@
-// src/components/Video/VideoOverlay.tsx
-
+import "./videodescription.scss";
 type VideoOverlayProps = {
   username: string;
   description: string;

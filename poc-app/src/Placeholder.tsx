@@ -1,16 +1,19 @@
-// src/pages/Placeholder.tsx
+import BottomNav from "./components/layout/BottomNav.js";
+import "./placeholder.scss";
+
 type PlaceholderProps = {
   title: string;
 };
 
-const Placeholder: React.FC<PlaceholderProps> = ({ title }) => {
+function Placeholder({ title }: PlaceholderProps) {
   return (
-    <page>
-      <view className="flex items-center justify-center h-screen bg-black text-white">
-        <text className="text-lg">{title} Page (Coming Soon)</text>
+    <page className="placeholder-page">
+      <view className="placeholder-content">
+        <text className="placeholder-text">{title} Page (Coming Soon)</text>
       </view>
+      <BottomNav />
     </page>
   );
-};
+}
 
 export default Placeholder;

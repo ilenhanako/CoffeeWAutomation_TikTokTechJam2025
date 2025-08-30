@@ -1,4 +1,3 @@
-// src/components/video/VideoInteraction.tsx
 import { useState } from "@lynx-js/react";
 import "./videointeraction.scss";
 import likedd from "../../assets/videoicons/liked.png";
@@ -31,28 +30,24 @@ function VideoInteraction({ likes, comments, shares, avatar }: VideoActionsProps
 
   return (
     <view className="video-actions">
-      {/* Avatar */}
-      <image src={avatar} className="video-actions__avatar" bindtap={() => navigate("/profile")} />
+      <image accessibility-label="User Avatar" src={avatar} className="video-actions__avatar" bindtap={() => navigate("/profile")} />
 
-      {/* Like */}
-      <view className="video-actions__item" bindtap={handleLike}>
+      <view accessibility-label="Like button" className="video-actions__item" bindtap={handleLike}>
         <image
           src={liked ?  likedd : like}
           className="video-actions__icon"
         />
-        <text>{likeCount}</text>
+        <text className="video-actions__count">{likeCount}</text>
       </view>
 
-      {/* Comment */}
-      <view className="video-actions__item" bindtap={() => console.log("Comment tapped")}>
+      <view accessibility-label="Comment button" className="video-actions__item" bindtap={() => console.log("Comment tapped")}>
         <image src={commentIcon} className="video-actions__icon" />
-        <text>{comments}</text>
+        <text className="video-actions__count">{comments}</text>
       </view>
 
-      {/* Share */}
-      <view className="video-actions__item" bindtap={() => console.log("Share tapped")}>
+      <view accessibility-label="Share button" className="video-actions__item" bindtap={() => console.log("Share tapped")}>
         <image src={shareIcon} className="video-actions__icon" />
-        <text>{shares}</text>
+        <text className="video-actions__count">{shares}</text>
       </view>
     </view>
   );

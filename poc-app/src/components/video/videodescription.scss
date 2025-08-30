@@ -1,18 +1,17 @@
 
-.video-description {
-  position: absolute;
-  bottom: 80px; // just above bottom nav
-  left: 16px;
-  color: white;
-}
 
 .video-username{
     color: white;
-    font-size: 12px;
+    font-size: 16px;
+    font-weight: bold;
 }
 .video-description-text {
   color: white;
+  font-size: 14px;
+  margin-top: 3px;
 }
 .video-music {
   color: white;
+  font-size: 12px;
+  margin-top: 10px;
 }

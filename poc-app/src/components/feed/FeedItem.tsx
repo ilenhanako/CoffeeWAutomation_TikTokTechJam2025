@@ -6,13 +6,13 @@ import VideoInteraction from "../video/VideoInteraction.js";
 import "./feeditem.scss";
 type FeedItemProps = {
   video: Video;
+  id: string;
 };
-
-function FeedItem({ video }: FeedItemProps) {
+function FeedItem({ video, id }: FeedItemProps) {
   return (
-    <view className="feed-item">
+    <view className="feed-item" id={id}>
       {/* Fullscreen video */}
-      <VideoPlayer src={video.src} />
+      <VideoPlayer src={video.src} accessibilityLabel={video.accessibilityLabel} id={`video-${video.id}`} />
 
       {/* Overlay (bottom left) */}
       <view className="feed-item__description">

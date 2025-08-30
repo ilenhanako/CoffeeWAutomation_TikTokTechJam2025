@@ -6,7 +6,7 @@ import Placeholder from './Placeholder.js';
 import App from './App.js';
 import Profile from './Profile.js';
 import Settings from './Settings.js';
-
+import EditProfile from './Edit.js';
 root.render(
   <MemoryRouter>
     <Routes>
@@ -21,6 +21,7 @@ root.render(
       <Route path="/upload" element={<Placeholder title="Upload" />} />
       <Route path="/inbox" element={<Placeholder title="Inbox" />} />
       <Route path="/settings" element={<Settings />} />
+      <Route path="/edit" element={<EditProfile />} />
 
       {/* fallback */}
       <Route path="*" element={<Placeholder title="Not Found" />} />

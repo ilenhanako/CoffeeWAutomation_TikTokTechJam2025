@@ -11,7 +11,7 @@ type NavIconProps = {
 
 const NavIcon: React.FC<NavIconProps> = ({ label, src, activeIcon, onClick, active }) => {
   return (
-    <view className={`nav-icon ${active ? "active" : ""}`} bindtap={() => onClick?.()}>
+    <view accessibility-label={label} className={`nav-icon ${active ? "active" : ""}`} bindtap={() => onClick?.()}>
       <image src={active ? activeIcon : src} className="nav-icon-image" />
       <text className="nav-icon-label">{label}</text>
     </view>

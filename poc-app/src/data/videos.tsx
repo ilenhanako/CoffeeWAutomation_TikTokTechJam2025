@@ -1,6 +1,6 @@
 import profileIcon from "../assets/videoicons/profile.png";
 import demoVideo from "../assets/videos/IMG_0157.mp4";
-import demoSecondVideo from "../assets/videos/IMG_0569.mp4"
+import demoSecondVideo from "../assets/videos/IMG_0569.mp4";
 
 export type Video = {
   id: number;
@@ -12,6 +12,7 @@ export type Video = {
   likes: number;
   comments: number;
   shares: number;
+  accessibilityLabel: string;
 };
 
 export const videos: Video[] = [
@@ -25,6 +26,7 @@ export const videos: Video[] = [
     likes: 1234,
     comments: 56,
     shares: 12,
+    accessibilityLabel: "video_1" // ✅ unique label for Appium
   },
   {
     id: 2,
@@ -36,5 +38,6 @@ export const videos: Video[] = [
     likes: 980,
     comments: 42,
     shares: 8,
+    accessibilityLabel: "video_2"
   },
 ];

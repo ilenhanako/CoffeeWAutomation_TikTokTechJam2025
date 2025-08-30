@@ -22,7 +22,7 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { label: "Home", route: "/home", icon: homeOutline, activeIcon: homeFilled },
+  { label: "Home", route: "/", icon: homeOutline, activeIcon: homeFilled },
   { label: "Shop", route: "/shop", icon: shopOutline, activeIcon: shopFilled },
   { label: "Upload", route: "/upload", icon: upload, activeIcon: upload },
   { label: "Inbox", route: "/inbox", icon: inboxOutline, activeIcon: inboxFilled },

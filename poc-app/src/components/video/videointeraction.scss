@@ -2,18 +2,32 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px; // space between items
+  gap: 16px;
   color: white;
 }
 
 .video-actions__avatar {
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
 }
 
 .video-actions__icon {
-  width: 25px;
-  height: 25px;
-  margin-bottom: 20px;
+  width: 35px;
+  height: 35px;
+}
+
+
+.video-actions__count{
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.video-actions__item{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }

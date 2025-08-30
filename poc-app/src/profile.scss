@@ -37,6 +37,7 @@
   margin-top: 12px;
   font-size: 18px;
   font-weight: bold;
+  color: white;
 }
 
 .profile-bio {
@@ -51,10 +52,12 @@
   display: flex;
   justify-content: space-around;
   width: 100%;
+  color: white;
   margin: 20px 0;
 }
 
 .stat-item {
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -63,6 +66,7 @@
 .stat-value {
   font-size: 16px;
   font-weight: bold;
+  color: white;
 }
 
 .stat-label {
