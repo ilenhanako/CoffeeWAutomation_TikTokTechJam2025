@@ -126,7 +126,6 @@ If ok=true, set recovery="NONE" and suggestions=[].
             )
             
         except Exception as e:
-            print(f"Error in step evaluation: {e}")
             return EvaluationResult(
                 ok=False,
                 reason=f"Evaluation error: {str(e)}",

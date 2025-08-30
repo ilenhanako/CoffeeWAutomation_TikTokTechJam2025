@@ -84,12 +84,13 @@ class ActionProcessor:
                 return ActionResult(status=result.get("status", "unknown"), metadata=result)
         
         # Fallback to full Qwen pipeline
-        print("XML-first: No match found, falling back to Qwen pipeline.")
+        print("XML-first: No match found, using vision model to localise")
         return self.process_screenshot_with_qwen(screenshot_path, user_query)
     
     def process_screenshot_with_qwen(self, screenshot_path: str, user_query: str) -> ActionResult:
         yolo_coord = get_prediction_from_step(screenshot_path, user_query)
         if yolo_coord:
+            #TODO: comment out
             print(f"YOLO matched '{user_query}' → {yolo_coord}")
             action = {
                 "arguments": {
@@ -168,13 +169,12 @@ class ActionProcessor:
             {"role": "user", "content": [
                 {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}},
                 {"type": "text", "text": "UI Hierarchy:\n" + page_source_trimmed},
-                {"type": "text", "text": static_block},  # <= injected knowledge
+                {"type": "text", "text": static_block},
                 {"type": "text", "text": user_query}
             ]},
         ]
         
-        output_text = self.qwen_client.chat_completion(messages, temperature=0.3)
-        print("Model output:", output_text)
+        output_text = self.qwen_client.chat_completion(messages, temperature=0.2)
         
         try:
             if "<tool_call>" in output_text:
@@ -182,7 +182,7 @@ class ActionProcessor:
             else:
                 action_json = output_text
             action = json.loads(action_json)
-            print("Parsed action:", action)
+        
             
             action = self._fix_mobile_action(action)
             print("Final normalized action:", action)
@@ -222,7 +222,7 @@ class ActionProcessor:
                 mapped = XMLParser.find_by_selector(page_source, text=sel_text, content_desc=sel_desc, resource_id=sel_res)
                 if mapped:
                     action_for_original["arguments"]["coordinate"] = mapped
-                    print(f"Selector mapped to coord: {mapped}")
+                    
         
         if act == "click" and "coordinate" in action_for_original["arguments"]:
             px, py = action_for_original["arguments"]["coordinate"]
@@ -236,7 +236,6 @@ class ActionProcessor:
                 prefer_keywords=("comment", "comments", "like", "share", "send", "reply")
             )
             if snapped != [px, py]:
-                print(f"Snapped click {(px,py)} -> {snapped}")
                 action_for_original["arguments"]["coordinate"] = snapped
             
             try:
@@ -261,7 +260,7 @@ class ActionProcessor:
                 metadata={"action_executed": result, "action": action_for_original}
             )
         else:
-            print(f"Executing action: {action_for_original}")
+            # print(f"Executing action: {action_for_original}")
             result = self.execute_with_retry(
                 action_for_original["arguments"],
                 mobile_use,
@@ -322,20 +321,15 @@ class ActionProcessor:
             for _ in range(8)
         ]
 
-        print(f"Clicking inside box ({x1},{y1}) -> ({x2},{y2}) with {len(candidates)} candidates")
-
         last_result = {"status": "failure"}
         for coord in candidates:
             args = dict(action_args)
             args["coordinate"] = coord
-            print(f"Trying click at {coord} ...")
             res = self.execute_with_retry(args, mobile_use, retries=retries_each, delay=delay_each)
             last_result = res
             if isinstance(res, dict) and res.get("status") == "success":
                 print(f"Success at {coord}")
                 return res
-
-        print("All random attempts failed, falling back to original coordinate.")
         return self.execute_with_retry(action_args, mobile_use, retries=2, delay=delay_each)
     
     
@@ -380,7 +374,6 @@ class ActionProcessor:
 
            
             output = self.qwen_client.vision_analysis(base64_image, prompt)
-            print(f"Qwen chose candidate: {output}")
 
             # Parse index safely
             try:
@@ -388,7 +381,6 @@ class ActionProcessor:
                 if 1 <= index <= len(relevant_elements):
                     chosen = relevant_elements[index - 1]
                     center = XMLParser.get_center_point(chosen["bounds"])
-                    print(f"Using element #{index} at {center}")
                     return {
                         "arguments": {
                             "action": "click",
@@ -396,7 +388,6 @@ class ActionProcessor:
                         }
                     }
                 else:
-                    print("Invalid index from Qwen, falling back to first candidate.")
                     chosen = relevant_elements[0]
                     center = XMLParser.get_center_point(chosen["bounds"])
                     return {
@@ -406,7 +397,6 @@ class ActionProcessor:
                         }
                     }
             except ValueError:
-                print("Qwen returned unexpected output, falling back to first candidate.")
                 chosen = relevant_elements[0]
                 center = XMLParser.get_center_point(chosen["bounds"])
                 return {
@@ -451,7 +441,6 @@ class ActionProcessor:
         elif any(keyword in cleaned_action for keyword in ['key', 'button']):
             return 'key'
         
-        print(f"Unknown action '{action_name}' mapped to 'click' as fallback")
         return 'click'
     
     def _fix_mobile_action(self, action: Dict[str, Any]) -> Dict[str, Any]:
@@ -465,11 +454,9 @@ class ActionProcessor:
         original_action = args['action']
         normalized_action = self.normalize_mobile_action(original_action)
         if original_action != normalized_action:
-            print(f"Action normalized: '{original_action}' -> '{normalized_action}'")
             action['arguments']['action'] = normalized_action
 
         if self._is_blocked_action(action):
-            print("Blocked action (back/terminate). Replacing with wait.")
             action['arguments'] = {"action": "wait", "time": 0.2}
         
         return action

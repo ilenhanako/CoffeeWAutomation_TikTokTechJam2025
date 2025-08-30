@@ -55,7 +55,6 @@ class StepExecutor:
         
         
         for cycle in range(1, max_cycles + 1):
-            print(f"Step cycle {cycle}/{max_cycles}")
             # --- PRE-CHECK: is step already satisfied? ---
             shot = self.screenshot_manager.take_screenshot(driver)
             b64 = self.screenshot_manager.encode_image(shot)
@@ -72,13 +71,13 @@ class StepExecutor:
                 print("✅ Step already satisfied, skipping execution.")
                 return True
             
-            # 1) Execute the step
+            # Execute the step
             self.action_processor.execute_enhanced_xml_first(
                 screenshot_path, step.query_for_qwen
             )
             time.sleep(0.2)
             
-            # 2) Evaluate outcome
+            # Evaluate outcome
             post_shot, eval_res = _evaluate_now()
             print(f"Evaluator verdict: ok={eval_res.ok} recovery={eval_res.recovery} reason={eval_res.reason}")
             
@@ -89,7 +88,7 @@ class StepExecutor:
             if eval_res.ok:
                 return True
             
-            # 3) Handle recovery based on evaluation
+            # Handle recovery based on evaluation
             if not self._handle_recovery(eval_res, driver, step, business_goal, post_shot, 
                                        resized_w, resized_h, orig_w, orig_h):
                 if cycle < max_cycles:

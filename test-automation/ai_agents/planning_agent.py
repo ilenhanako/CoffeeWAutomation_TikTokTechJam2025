@@ -33,7 +33,7 @@ class MultiScenarioPlannerAgent:
                 scenarios_data = json.loads(response_text[json_start:json_end])
                 return self._parse_scenarios(scenarios_data)
             else:
-                print("⚠️ No valid JSON in LLM response.")
+                # print("⚠️ No valid JSON in LLM response.")
                 return []
         except Exception as e:
             print(f"❌ Error generating scenarios: {e}")

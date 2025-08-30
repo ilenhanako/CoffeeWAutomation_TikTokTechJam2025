@@ -212,3 +212,4 @@ page_dumps/
 screenshots/
 .vscode/
 .DS_Store
+test-automation/utils/demo_coordinates.py

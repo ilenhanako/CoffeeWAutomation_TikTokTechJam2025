@@ -39,6 +39,7 @@ def get_prediction_from_step(image_path: str, user_query: str, confidence_thresh
     target_classes = list(set(target_classes))
 
     if not target_classes:
+        #TODO: remove later
         print(f"[YOLO] No intent keywords matched in query: '{user_query}'")
         return None
     
@@ -55,6 +56,6 @@ def get_prediction_from_step(image_path: str, user_query: str, confidence_thresh
             continue
         if prediction['class'].lower() in target_classes:
             return (prediction['x'], prediction['y'])
-    
+    #TODO: remove later
     print(f"[YOLO] No confident match for {target_classes}")
     return None
