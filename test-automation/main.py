@@ -138,7 +138,12 @@ def run_automation(business_goal: str, scenarios: List):
                     })
 
                 er = result.get("eval_result", {})
-                logger.info(f"[Evaluator] ok={er.get('ok')} recovery={er.get('recovery')} reason={er.get('reason')}")
+                logger.info(
+                    f"[Evaluator] ok={er.get('ok')} "
+                    f"recovery={er.get('recovery')} "
+                    f"reason={er.get('reason')} "
+                    f"suggestions={er.get('suggestions')}"
+                )
 
                 if result.get("done"):
                     print(f"   ✅ Step {step.step_id} completed | Notes: {result.get('notes')}")

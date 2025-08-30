@@ -80,7 +80,7 @@ def expand_with_fuzzy(query: str, threshold: int = 70) -> list[str]:
     matches = process.extract(query, YOLO_CLASSES, scorer=fuzz.partial_ratio, limit=5)
     return [m[0] for m in matches if m[1] >= threshold]
 
-def get_prediction_from_step(image_path: str, user_query: str, confidence_threshold: float = 0.95):
+def get_prediction_from_step(image_path: str, user_query: str, confidence_threshold: float = 0.90):
     query = user_query.lower()
     target_classes = []
 
@@ -107,8 +107,8 @@ def get_prediction_from_step(image_path: str, user_query: str, confidence_thresh
     # 3. Run YOLO workflow
     result = client.run_workflow(
         workspace_name="tiktok-qz4gk",
-        # workflow_id="tiktokflutter",
-        workflow_id="tiktoklynx",
+        workflow_id="tiktokflutter",
+        # workflow_id="tiktoklynx",
         images={"image":image_path},
         use_cache=True
     )
