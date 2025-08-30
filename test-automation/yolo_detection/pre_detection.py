@@ -107,7 +107,8 @@ def get_prediction_from_step(image_path: str, user_query: str, confidence_thresh
     # 3. Run YOLO workflow
     result = client.run_workflow(
         workspace_name="tiktok-qz4gk",
-        workflow_id="tiktokflutter",
+        # workflow_id="tiktokflutter",
+        workflow_id="tiktoklynx",
         images={"image":image_path},
         use_cache=True
     )
@@ -120,10 +121,11 @@ def get_prediction_from_step(image_path: str, user_query: str, confidence_thresh
         predictions = []
 
     # 4. Filter predictions by target_classes and confidence
-    filtered = [
-        p for p in predictions
-        if p["confidence"] >= confidence_threshold and p["class"].lower() in [c.lower() for c in target_classes]
-    ]
+    filtered = []
+    for p in predictions:
+        print(f"[YOLO] Prediction: class={p.get('class')}, confidence={p.get('confidence')}")
+        if p["confidence"] >= confidence_threshold and p["class"].lower() in [c.lower() for c in target_classes]:
+            filtered.append(p)
 
     if not filtered:
         print(f"[YOLO] No confident match for {target_classes}")
