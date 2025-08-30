@@ -2,6 +2,7 @@
 import time
 import sys
 from pathlib import Path
+from typing import List
 from graph.workflow import build_workflow
 from graph import nodes
 from ai_agents.evaluator import AIEvaluator
@@ -25,7 +26,7 @@ from  utils.logging import setup_logger
 
 logger = setup_logger()
 
-def main():
+def run_automation(business_goal: str, scenarios: List):
     logger.info("Starting Mobile UI Automation")
     print("Starting Mobile UI Automation")
     
@@ -39,7 +40,6 @@ def main():
     
     try:
         logger.info("Setting up Appium driver...")
-        print("Setting up Appium driver...")
         driver = driver_manager.setup_driver()
         time.sleep(10)
 
@@ -85,7 +85,7 @@ def main():
             guard
         )
         
-        business_goal = 'Go to the profile page, click edit profile and change the name to Angie and save'
+        # business_goal = 'Go to the profile page, click edit profile and change the name to Angie and save'
         print(f"Business Goal: {business_goal}")
         logger.info(f"Business Goal: {business_goal}")
 
@@ -93,8 +93,8 @@ def main():
         # step_executor = StepExecutor(driver_manager, action_processor, guard, processor_config)
         
         screenshot_path = screenshot_manager.take_screenshot(driver)
-        planner = MultiScenarioPlannerAgent(api_key=config.DASHSCOPE_API_KEY)
-        scenarios = planner.generate_scenarios(business_goal, complexity="medium")
+        # planner = MultiScenarioPlannerAgent(api_key=config.DASHSCOPE_API_KEY)
+        # scenarios = planner.generate_scenarios(business_goal, complexity="medium")
 
         if not scenarios:
             print("⚠️ No scenarios generated. Exiting.")
@@ -127,6 +127,16 @@ def main():
 
                 result = graph.invoke(state)
 
+                intr = guard.detect(driver, screen_size["width"], screen_size["height"])
+                if intr.present:
+                    screenshot_path = screenshot_manager.take_screenshot(driver)
+                    screenshot_b64 = screenshot_manager.encode_image(screenshot_path)
+                    logger.send_event({
+                        "type": "screenshot",
+                        "step_id": step.step_id,
+                        "image_b64": screenshot_b64
+                    })
+
                 er = result.get("eval_result", {})
                 logger.info(f"[Evaluator] ok={er.get('ok')} recovery={er.get('recovery')} reason={er.get('reason')}")
 
@@ -152,6 +162,6 @@ def main():
         print("✅ Automation completed")
         logger.info("✅ Automation completed")
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
 

@@ -1,25 +1,44 @@
 import logging
+import asyncio
 
-def setup_logger(log_file="automation.log"):
+websockets = []
+_loop: asyncio.AbstractEventLoop = None
+
+def register_ws(ws):
+    global _loop
+    _loop = asyncio.get_event_loop()
+    websockets.append(ws)
+
+async def broadcast(event: dict):
+    remove = []
+    for ws in websockets:
+        try:
+            await ws.send_json(event)
+        except Exception:
+            remove.append(ws)
+    for ws in remove:
+        websockets.remove(ws)
+
+def send_event(event: dict):
+
+    if _loop and _loop.is_running():
+        asyncio.run_coroutine_threadsafe(broadcast(event), _loop)
+
+class StreamlitLogHandler(logging.Handler):
+    def emit(self, record):
+        log_entry = self.format(record)
+        send_event({"type": "log", "message": log_entry})
+
+def setup_logger():
     logger = logging.getLogger("automation")
     logger.setLevel(logging.INFO)
 
-    if logger.hasHandlers():
-        logger.handlers.clear()
+    handler = StreamlitLogHandler()
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
-    # Console handler (stdout)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
+    # add send_event convenience to logger
+    logger.send_event = send_event  
 
-    # File handler
-    fh = logging.FileHandler(log_file, mode="w", encoding="utf-8")
-    fh.setLevel(logging.INFO)
-
-    # Format
-    formatter = logging.Formatter("%(asctime)s - %(message)s", "%Y-%m-%d %H:%M:%S")
-    ch.setFormatter(formatter)
-    fh.setFormatter(formatter)
-
-    logger.addHandler(ch)
-    logger.addHandler(fh)
     return logger
