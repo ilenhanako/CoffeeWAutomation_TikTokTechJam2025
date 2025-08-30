@@ -34,6 +34,15 @@ class UIConfig:
     card_background: str = "#2a2a2a"
 
 @dataclass
+class AutomationConfig:
+    """Automation service configuration"""
+    base_url: str = "http://localhost:8000"
+    websocket_url: str = "ws://localhost:8000/logs"
+    timeout: int = 30
+    health_check_timeout: int = 5
+    max_retries: int = 3
+    
+@dataclass
 class AppConfig:
     """Main application configuration"""
     app_title: str = "🤖 Bombotest GUI Test"
@@ -57,6 +66,7 @@ class Settings:
         self.database = DatabaseConfig()
         self.ui = UIConfig()
         self.app = AppConfig()
+        self.automation = AutomationConfig()
         self._load_from_environment()
     
     def _load_from_environment(self):
@@ -73,6 +83,13 @@ class Settings:
         # Paths
         self.app.knowledge_graph_path = os.getenv("KG_PATH", self.app.knowledge_graph_path)
         self.app.chroma_db_path = os.getenv("CHROMA_DB_PATH", self.app.chroma_db_path)
+        
+        # Automation settings
+        self.automation.base_url = os.getenv("AUTOMATION_BASE_URL", self.automation.base_url)
+        self.automation.websocket_url = os.getenv("AUTOMATION_WEBSOCKET_URL", self.automation.websocket_url)
+        self.automation.timeout = int(os.getenv("AUTOMATION_TIMEOUT", str(self.automation.timeout)))
+        self.automation.health_check_timeout = int(os.getenv("AUTOMATION_HEALTH_TIMEOUT", str(self.automation.health_check_timeout)))
+        self.automation.max_retries = int(os.getenv("AUTOMATION_MAX_RETRIES", str(self.automation.max_retries)))
     
     def get_page_config(self) -> Dict[str, Any]:
         """Get Streamlit page configuration"""

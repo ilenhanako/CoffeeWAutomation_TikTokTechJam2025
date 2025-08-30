@@ -3,10 +3,11 @@ Query and Test Generation page module
 """
 
 import streamlit as st
-from typing import List, Tuple
 from utils.ui_components import UIComponents
 from utils.session_manager import SessionManager
 from services.scenario_service import ScenarioService
+from services.automation_service import AutomationService
+from utils.status_monitor import StreamlitStatusMonitor
 from utils.caching import PerformanceMonitor
 from utils.logging_config import logger
 
@@ -51,14 +52,13 @@ class QueryGenerationPage:
             
             # Advanced options
             with st.expander("Advanced Options"):
-                debug_mode = st.checkbox("Show Debug Info", False, key="debug_mode")
-                SessionManager.set('debug_mode', debug_mode)
+                st.checkbox("Show Debug Info", False, key="debug_mode")
         
         # Execute button and status
-        QueryGenerationPage._render_execution_controls(query, start_state)
+        QueryGenerationPage._render_query_execution_controls(query, start_state)
     
     @staticmethod
-    def _render_execution_controls(query: str, start_state: str):
+    def _render_query_execution_controls(query: str, start_state: str):
         """Render execution controls and handle query processing"""
         col_btn, col_status = st.columns([1, 1])
         
@@ -88,7 +88,7 @@ class QueryGenerationPage:
                 logger.info(f"Successfully generated test plan: {scenario_plan.scenario_title}")
                 
                 # Show debug info if enabled
-                if SessionManager.get('debug_mode'):
+                if st.session_state.get('debug_mode', False):
                     QueryGenerationPage._show_debug_info(query, start_state, scenario_plan)
             
             else:
@@ -162,3 +162,111 @@ class QueryGenerationPage:
                 )
         
         st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Add execution controls
+        QueryGenerationPage._render_execution_controls(current_plan)
+    
+    @staticmethod
+    def _render_execution_controls(current_plan):
+        """Render automation execution controls and monitoring UI"""
+        st.markdown("---")
+        
+        # Execution section header
+        st.markdown("""
+        <div style='color: #25F4EE; font-size: 20px; font-weight: bold; margin: 20px 0;'>
+            🚀 Execute Automation Testing
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Check automation service health
+        col1, col2, col3 = st.columns([1, 1, 1])
+        
+        with col1:
+            if st.button("🔍 Check Service Health", use_container_width=True):
+                with st.spinner("Checking automation service..."):
+                    is_healthy, status_message = AutomationService.check_automation_service_health()
+                    if is_healthy:
+                        st.success(status_message)
+                    else:
+                        st.error(status_message)
+        
+        with col2:
+            start_state = st.selectbox(
+                "Starting State:",
+                options=["HomePage", "ForYouPage", "STEMPage", "ExplorePage", 
+                        "FollowingPage", "FriendsPage", "ProfilePage", "SettingsPage"],
+                key="execution_start_state"
+            )
+        
+        with col3:
+            show_monitoring = st.checkbox(
+                "Show Status Monitoring", 
+                value=True,
+                help="Display execution status after starting automation"
+            )
+        
+        # Execute button
+        col_execute, col_status = st.columns([1, 2])
+        
+        with col_execute:
+            execute_clicked = st.button(
+                "Execute Automation",
+                type="primary",
+                use_container_width=True,
+                key="execute_automation"
+            )
+        
+        with col_status:
+            status_placeholder = st.empty()
+        
+        # Handle execution
+        if execute_clicked:
+            QueryGenerationPage._handle_automation_execution(
+                current_plan, 
+                start_state, 
+                show_monitoring, 
+                status_placeholder
+            )
+        
+        # Show monitoring UI if monitoring is enabled and execution is active
+        current_execution_id = SessionManager.get('current_execution_id')
+        if show_monitoring and current_execution_id:
+            StreamlitStatusMonitor.render_execution_status(current_execution_id)
+    
+    @staticmethod
+    def _handle_automation_execution(current_plan, start_state: str, show_monitoring: bool, status_placeholder):
+        """Handle automation execution"""
+        with st.spinner("Starting automation execution..."):
+            # Execute the scenario
+            success, message, response_data = AutomationService.execute_scenario(current_plan, start_state)
+            
+            if success:
+                status_placeholder.success(message)
+                execution_id = response_data.get('execution_id')
+                SessionManager.set('current_execution_id', execution_id)
+                
+                # Refresh to show monitoring UI if enabled
+                if show_monitoring:
+                    st.rerun()
+                    
+            else:
+                status_placeholder.error(message)
+                
+                # Show troubleshooting info
+                with st.expander("🔧 Troubleshooting"):
+                    st.markdown("""
+                    **Common Issues:**
+                    
+                    1. **Service Not Running**: Start the FastAPI automation service:
+                       ```bash
+                       cd test-automation
+                       python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+                       ```
+                    
+                    2. **Port Conflicts**: Ensure port 8000 is available
+                    
+                    3. **Configuration**: Check automation service URL in settings
+                    
+                    4. **Dependencies**: Ensure all automation dependencies are installed
+                    """)
+    

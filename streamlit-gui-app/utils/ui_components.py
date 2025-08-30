@@ -96,6 +96,7 @@ class UIComponents:
         
         expected_result = step.expected_state if step.expected_state else "Stay in current state"
         
+        
         step_content = f"""
         <div style='margin: 15px 0; padding: 15px; background-color: {settings.ui.card_background}; 
                     border-radius: 8px; border-left: 4px solid {border_color};'>
