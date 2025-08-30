@@ -1,4 +1,3 @@
-# api_server.py
 import uvicorn
 from fastapi import FastAPI, WebSocket
 from pydantic import BaseModel
@@ -7,6 +6,8 @@ from typing import List, Optional
 from main import run_automation
 
 app = FastAPI()
+# python -m uvicorn api_server:app --host 0.0.0.0 --port 8000
+
 
 # ----- Request/Response Schemas -----
 class Step(BaseModel):
