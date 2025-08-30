@@ -1,0 +1,55 @@
+.settings-page {
+  width: 100vw;
+  height: 100vh;
+  background: #111;
+  color: white;
+}
+
+.settings-topnav {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid #333;
+}
+
+.settings-back {
+  font-size: 30px;
+  margin-right: 16px;
+  font-weight: bold;
+  color: white;
+}
+
+.settings-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+}
+
+.settings-content {
+  flex: 1;
+}
+
+.settings-section {
+  margin-top: 20px;
+  padding: 0 16px;
+}
+
+.settings-section-title {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #888;
+}
+
+.settings-item {
+  padding: 14px 0;
+  border-bottom: 1px solid #222;
+  font-size: 16px;
+}
+
+.settings-item.logout {
+  color: #ff4d4f;
+  text-align: center;
+  font-weight: bold;
+}

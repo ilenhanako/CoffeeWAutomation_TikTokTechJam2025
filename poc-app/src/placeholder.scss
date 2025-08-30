@@ -1,0 +1,22 @@
+.placeholder-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: black;
+  color: white;
+}
+
+.placeholder-content {
+  flex: 1; /* fills screen above BottomNav */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.placeholder-text {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff;
+  opacity: 0.85;
+  text-align: center;
+}
