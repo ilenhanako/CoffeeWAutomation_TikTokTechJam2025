@@ -1,0 +1,19 @@
+.video-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px; // space between items
+  color: white;
+}
+
+.video-actions__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.video-actions__icon {
+  width: 25px;
+  height: 25px;
+  margin-bottom: 20px;
+}

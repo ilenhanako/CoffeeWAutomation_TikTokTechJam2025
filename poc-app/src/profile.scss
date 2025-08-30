@@ -1,0 +1,111 @@
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: black;
+  color: white;
+  height: 100vh;
+}
+.profile-topnav{
+  width: 100vw;
+  height: 10vh;
+
+
+}
+.profile-settings{
+  position: absolute;
+  top:50px;
+  right:10px;
+  width: 24px;
+  height: 24px;
+}
+
+.profile-header {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.profile-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+}
+
+.profile-username {
+  margin-top: 12px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.profile-bio {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #aaa;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.profile-stats {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin: 20px 0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.profile-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.profile-btn {
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+  background-color: red;
+  color: white;
+  text-align: center;
+}
+
+.profile-btn.secondary {
+  background-color: gray;
+}
+
+.video-grid {
+  flex: 1;
+  width: 100%;
+  padding: 8px;
+}
+
+.video-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.video-thumb {
+  width: 190px;
+  height: 190px;
+  background-color: #222;
+  border-radius: 6px;
+}

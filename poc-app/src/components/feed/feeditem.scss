@@ -1,0 +1,29 @@
+.feed-item {
+  width: 100vw;
+  height: 90vh; 
+  position: relative;
+  background: black;
+  overflow: hidden; /* clip any overflow video */
+}
+
+
+.feed-item__interaction {
+  position: absolute;
+  bottom: 80px; /* lifted above bottom nav */
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: white;
+  z-index: 1000;
+}
+
+.feed-item__description {
+  position: absolute;
+  bottom: 80px;
+  left: 12px;
+  color: white;
+  z-index: 1000;
+  max-width: 65%;
+}

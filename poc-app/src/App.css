@@ -1,0 +1,15 @@
+:root {
+  background-color: #000;
+  --color-text: #fff;
+}
+
+.App {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+
