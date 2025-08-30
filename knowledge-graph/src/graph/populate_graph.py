@@ -149,6 +149,63 @@ def populate_knowledge_graph_from_ontology(kg: Neo4jKnowledgeGraph):
             }
         )
     
+    # Add scroll actions for content browsing
+    print("Adding scroll actions...")
+    
+    # HomePage scroll actions for browsing video content
+    kg.add_action_relationship(
+        component_id="HomePage_LikeButton",
+        action_type="scroll",
+        target_state="HomePage",  # Stays on same page but shows different content
+        properties={
+            "query_for_qwen": "Scroll down through the video feed to find videos to like",
+            "alternative_actions": ["Swipe up on feed", "Flick scroll to browse quickly"]
+        }
+    )
+    
+    kg.add_action_relationship(
+        component_id="HomePage_CommentButton",
+        action_type="scroll", 
+        target_state="HomePage",
+        properties={
+            "query_for_qwen": "Scroll through video feed to find videos to comment on",
+            "alternative_actions": ["Swipe up/down to browse videos", "Quick scroll to find content"]
+        }
+    )
+    
+    # Add scroll for feed sections
+    for section in ["STEM", "Explore", "Following", "Friends", "ForYou"]:
+        kg.add_action_relationship(
+            component_id=f"HomePage_{section}",
+            action_type="scroll",
+            target_state="HomePage",
+            properties={
+                "query_for_qwen": f"Scroll through the {section} feed to browse content",
+                "alternative_actions": [f"Swipe vertically in {section} section", "Quick scroll to find videos"]
+            }
+        )
+    
+    # ProfilePage scroll actions for browsing user content
+    kg.add_action_relationship(
+        component_id="ProfilePage_Following",
+        action_type="scroll",
+        target_state="ProfilePage",
+        properties={
+            "query_for_qwen": "Scroll through the following list to browse followed users",
+            "alternative_actions": ["Swipe up/down in following section"]
+        }
+    )
+    
+    kg.add_action_relationship(
+        component_id="ProfilePage_Followers", 
+        action_type="scroll",
+        target_state="ProfilePage",
+        properties={
+            "query_for_qwen": "Scroll through followers list to see who follows this user",
+            "alternative_actions": ["Swipe vertically through followers"]
+        }
+    )
+    
     print("Knowledge graph population completed!")
 
 
