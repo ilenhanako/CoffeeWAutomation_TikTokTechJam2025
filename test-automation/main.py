@@ -2,6 +2,7 @@
 import time
 import sys
 from pathlib import Path
+from typing import List
 from graph.workflow import build_workflow
 from graph import nodes
 from ai_agents.evaluator import AIEvaluator
@@ -20,8 +21,13 @@ from ai_agents.qwen_agent import QwenClient
 from models.execution_models import ProcessorConfig
 from tools.mobile_tool import MobileUse
 from config.settings import config
+from utils.executor_runner import run_scenario_with_planning
+from  utils.logging import setup_logger
 
-def main():
+logger = setup_logger()
+
+def run_automation(business_goal: str, scenarios: List):
+    logger.info("Starting Mobile UI Automation")
     print("Starting Mobile UI Automation")
     
     driver_manager = DriverManager()
@@ -30,14 +36,12 @@ def main():
     evaluator = AIEvaluator()
     processor_config = ProcessorConfig()
 
-    DEMO_MODE = True
+    DEMO_MODE = False
     
     try:
-        print("Setting up Appium driver...")
+        logger.info("Setting up Appium driver...")
         driver = driver_manager.setup_driver()
-
-        # driver.save_screenshot("sanity.png")
-        print("Sanity screenshot saved.")
+        time.sleep(10)
 
         screen_size = driver_manager.get_screen_size()
         
@@ -60,13 +64,6 @@ def main():
             )
            
             action_processor.demo_coordinator = demo_coordinator
-        # if DEMO_MODE:
-        #     print("🎯 Demo mode enabled - using hardcoded coordinates")
-        #     demo_coordinator = DemoCoordinator(
-        #         mobile_use=mobile_use,
-        #         execute_with_retry_func=lambda args, mobile, retries, delay: 
-        #             ActionProcessor(driver_manager, mobile_use, qwen_client).execute_with_retry(args, mobile, retries, delay)
-        #     )
 
         action_processor = ActionProcessor(driver_manager, mobile_use, qwen_client,demo_coordinator=demo_coordinator)
 
@@ -88,28 +85,33 @@ def main():
             guard
         )
         
-        business_goal = 'Like a video on home page'
+        # business_goal = 'Go to the profile page, click edit profile and change the name to Angie and save'
         print(f"Business Goal: {business_goal}")
-        step_executor = StepExecutor(driver_manager, action_processor, guard, processor_config)
+        logger.info(f"Business Goal: {business_goal}")
+
+        ## Uncomment to use step_executor instead of graph
+        # step_executor = StepExecutor(driver_manager, action_processor, guard, processor_config)
         
         screenshot_path = screenshot_manager.take_screenshot(driver)
-        planner = MultiScenarioPlannerAgent(api_key=config.DASHSCOPE_API_KEY)
-        scenarios = planner.generate_scenarios(business_goal, complexity="medium")
+        # planner = MultiScenarioPlannerAgent(api_key=config.DASHSCOPE_API_KEY)
+        # scenarios = planner.generate_scenarios(business_goal, complexity="medium")
 
         if not scenarios:
             print("⚠️ No scenarios generated. Exiting.")
             return      
         
-        
+        ## Uncomment to use step_executor instead of graph
         # run_scenario_with_planning(business_goal, step_executor, complexity="medium")
 
         graph = build_workflow()
-        print(scenarios)
+        
 
         for scenario in scenarios:
             print(f"\n🚀 Executing Scenario {scenario.scenario_id}: {scenario.scenario_title}")
+            logger.info(f"🚀 Executing Scenario {scenario.scenario_id}: {scenario.scenario_title}")
 
             for step in scenario.steps:
+                logger.info(f" ▶ Step {step.step_id}: {step.description} [{step.action_type}]")
                 print(f"\n   ▶ Step {step.step_id}: {step.description} [{step.action_type}]")
 
                 # build graph state from planner step
@@ -125,11 +127,28 @@ def main():
 
                 result = graph.invoke(state)
 
+                intr = guard.detect(driver, screen_size["width"], screen_size["height"])
+                if intr.present:
+                    screenshot_path = screenshot_manager.take_screenshot(driver)
+                    screenshot_b64 = screenshot_manager.encode_image(screenshot_path)
+                    logger.send_event({
+                        "type": "screenshot",
+                        "step_id": step.step_id,
+                        "image_b64": screenshot_b64
+                    })
+
+                er = result.get("eval_result", {})
+                logger.info(f"[Evaluator] ok={er.get('ok')} recovery={er.get('recovery')} reason={er.get('reason')}")
+
                 if result.get("done"):
                     print(f"   ✅ Step {step.step_id} completed | Notes: {result.get('notes')}")
+                    logger.info(f"   ✅ Step {step.step_id} completed | Notes: {result.get('notes')}")
                 else:
                     print(f"   ❌ Step {step.step_id} failed | Notes: {result.get('notes')}")
+                    logger.info(f"   ❌ Step {step.step_id} failed | Notes: {result.get('notes')}")
+
             print("↻ Resetting GUI for next scenario...")
+            logger.info("↻ Resetting GUI for next scenario...")
             driver_manager.reset_app(clear_data=False)
             time.sleep(1.0)
         
@@ -141,46 +160,8 @@ def main():
         print("Cleaning up...")
         driver_manager.quit_driver()
         print("✅ Automation completed")
+        logger.info("✅ Automation completed")
 
-def run_scenario_with_planning(business_goal: str, step_executor: StepExecutor, complexity: str = "medium"):
-    print(f"Generating plan for: {business_goal}")
-    
-    planner = MultiScenarioPlannerAgent(api_key=config.DASHSCOPE_API_KEY)
-    scenarios = planner.generate_scenarios(business_goal, complexity)
-    
-    if not scenarios:
-        print("⚠️ No scenarios generated. Exiting.")
-        return
-    
-    for scenario in scenarios:
-        print(f"Full Scenario: {scenario}")
-        print(f"\n🚀 Executing Scenario {scenario.scenario_id}: {scenario.scenario_title}")
-        print(f"   ✅ Success Criteria: {scenario.success_criteria}")
-        print(f"   ❌ Failure Cases: {scenario.failure_scenarios}")
-        
-
-        for step in scenario.steps:
-            print(f"\n   ▶ Step {step.step_id}: {step.description} [{step.action_type}]")
-            
-            # screenshot before step
-            screenshot_path = step_executor.screenshot_manager.take_screenshot(
-                step_executor.driver_manager.get_driver()
-            )
-            
-            success = step_executor.execute_step_with_guard(
-                business_goal, step, screenshot_path
-            )
-            
-            if not success:
-                print(f"   ❌ Step {step.step_id} failed")
-
-            else:
-                print(f"   ✅ Step {step.step_id} completed")
-            
-            time.sleep(1.0)
-        
-        print(f"✅ Finished Scenario {scenario.scenario_id}\n")
-
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
 

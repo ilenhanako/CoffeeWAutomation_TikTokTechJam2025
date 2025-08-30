@@ -13,7 +13,7 @@ class ScreenshotManager:
             path = config.SCREENSHOT_PATH
         
         driver.save_screenshot(path)
-        print(f"Screenshot saved: {path}")
+        # print(f"Screenshot saved: {path}")
         return path
     
     @staticmethod

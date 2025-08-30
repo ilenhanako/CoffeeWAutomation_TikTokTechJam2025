@@ -111,7 +111,7 @@ class CoordinateUtils:
                 closest = n
 
         if closest:
-            print(f"Using XML bounds for nearest tappable element: {closest['bounds']}")
+            # print(f"Using XML bounds for nearest tappable element: {closest['bounds']}")
             x1,y1,x2,y2 = closest["bounds"]
         else:
             size = driver.get_screen_size()
@@ -132,7 +132,7 @@ class CoordinateUtils:
             if x1 > x2: x1, x2 = x2, x1
             if y1 > y2: y1, y2 = y2, y1
 
-            print(f"No XML bounds found. Using centered box: ({x1},{y1}) -> ({x2},{y2})")
+            # print(f"No XML bounds found. Using centered box: ({x1},{y1}) -> ({x2},{y2})")
 
         return (x1, y1, x2, y2)
     

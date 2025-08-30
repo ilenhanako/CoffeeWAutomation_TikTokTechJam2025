@@ -2,7 +2,7 @@ import time
 from typing import Dict, List
 from PIL import Image
 
-from models.execution_models import ExecutorStep, ProcessorConfig, ActionResult
+from models.execution_models import EvaluationResult, ExecutorStep, ProcessorConfig, ActionResult
 from core.driver_manager import DriverManager
 from core.screenshot_manager import ScreenshotManager
 from .action_processor import ActionProcessor
@@ -38,6 +38,15 @@ class StepExecutor:
         )
         
         def _evaluate_now():
+            if step.action_type in ("swipe", "scroll"):
+                return None, EvaluationResult(
+                    ok=True,
+                    reason="Scroll action executed, evaluation skipped.",
+                    recovery="NONE",
+                    suggestions=[],
+                    gate_type="NONE",
+                    confidence=1.0,
+                )
             shot = self.screenshot_manager.take_screenshot(driver)
             b64 = self.screenshot_manager.encode_image(shot)
             xml_after = self.driver_manager.get_page_source()
@@ -49,53 +58,59 @@ class StepExecutor:
                     "action_type": getattr(step, "action_type", None),
                     "qwen_query": getattr(step, "query_for_qwen", None)
                 },
-                page_source_xml=xml_after,
+                # page_source_xml=xml_after,
                 screenshot_b64=b64,
             )
         
         
         for cycle in range(1, max_cycles + 1):
-            print(f"Step cycle {cycle}/{max_cycles}")
             # --- PRE-CHECK: is step already satisfied? ---
-            shot = self.screenshot_manager.take_screenshot(driver)
-            b64 = self.screenshot_manager.encode_image(shot)
-            xml = self.driver_manager.get_page_source()
-            pre_eval = self.evaluator.evaluate_step_outcome(
-                business_goal,
-                getattr(step, "description", ""),
-                self._get_expected_hint_from_step(step),
-                {},
-                xml,
-                b64,
-            )
-            if pre_eval.ok:
-                print("✅ Step already satisfied, skipping execution.")
+            if step.action_type in ("swipe", "scroll"):
+                print("Skipping evaluator for scroll/swipe step.")
+                self.action_processor.execute_enhanced_xml_first(
+                    screenshot_path, step.query_for_qwen
+                )
                 return True
-            
-            # 1) Execute the step
-            self.action_processor.execute_enhanced_xml_first(
-                screenshot_path, step.query_for_qwen
-            )
-            time.sleep(0.2)
-            
-            # 2) Evaluate outcome
-            post_shot, eval_res = _evaluate_now()
-            print(f"Evaluator verdict: ok={eval_res.ok} recovery={eval_res.recovery} reason={eval_res.reason}")
-            
-            if eval_res.suggestions:
-                for s in eval_res.suggestions[:4]:
-                    print(f"   Suggestion: {s}")
-            
-            if eval_res.ok:
-                return True
-            
-            # 3) Handle recovery based on evaluation
-            if not self._handle_recovery(eval_res, driver, step, business_goal, post_shot, 
-                                       resized_w, resized_h, orig_w, orig_h):
-                if cycle < max_cycles:
-                    continue
-                else:
-                    break
+            else:
+                shot = self.screenshot_manager.take_screenshot(driver)
+                b64 = self.screenshot_manager.encode_image(shot)
+                xml = self.driver_manager.get_page_source()
+                pre_eval = self.evaluator.evaluate_step_outcome(
+                    business_goal,
+                    getattr(step, "description", ""),
+                    self._get_expected_hint_from_step(step),
+                    {},
+                    xml,
+                    b64,
+                )
+                if pre_eval.ok:
+                    print("✅ Step already satisfied, skipping execution.")
+                    return True
+                
+                # Execute the step
+                self.action_processor.execute_enhanced_xml_first(
+                    screenshot_path, step.query_for_qwen
+                )
+                time.sleep(0.2)
+                
+                # Evaluate outcome
+                post_shot, eval_res = _evaluate_now()
+                print(f"Evaluator verdict: ok={eval_res.ok} recovery={eval_res.recovery} reason={eval_res.reason}")
+                
+                if eval_res.suggestions:
+                    for s in eval_res.suggestions[:4]:
+                        print(f"   Suggestion: {s}")
+                
+                if eval_res.ok:
+                    return True
+                
+                # Handle recovery based on evaluation
+                if not self._handle_recovery(eval_res, driver, step, business_goal, post_shot, 
+                                        resized_w, resized_h, orig_w, orig_h):
+                    if cycle < max_cycles:
+                        continue
+                    else:
+                        break
         
         print("Max cycles reached without success.")
         return False
