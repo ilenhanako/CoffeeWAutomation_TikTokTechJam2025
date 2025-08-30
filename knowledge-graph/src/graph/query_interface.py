@@ -1,7 +1,6 @@
 from typing import List, Dict, Any, Optional
 from .neo4j_knowledge_graph import Neo4jKnowledgeGraph
-from ..models.scenario import BusinessScenario
-from ..models.ontology import ScenarioPlan, ExecutorStep
+from ..models.ontology import ScenarioPlan
 
 
 class GraphQueryInterface:
@@ -120,55 +119,23 @@ class GraphQueryInterface:
             return navigation_map
     
     def add_sample_business_scenarios(self):
-        """Add sample business scenarios to vector store for testing"""
-        sample_scenarios = [
-            BusinessScenario(
-                id=1,
-                title="User can log in",
-                feature="Authentication",
-                goal="Reach Dashboard",
-                given_conditions=["app.launched()"],
-                when_actions=["I choose to log in with a valid account"],
-                then_expectations=[
-                    "I should eventually be on Dashboard",
-                    "property analytics.event_fired('login_success')",
-                    "invariant no_blocking_spinners"
-                ]
-            ),
-            BusinessScenario(
-                id=2, 
-                title="Comment on a video",
-                feature="Social interaction",
-                goal="Post comment on video",
-                given_conditions=["I am on HomePage", "I see a video post"],
-                when_actions=["I tap the comment button", "I type a comment", "I submit"],
-                then_expectations=["Comment appears in comment list", "Comment count increases"]
-            ),
-            BusinessScenario(
-                id=3,
-                title="Update profile information", 
-                feature="Profile management",
-                goal="Update user profile",
-                given_conditions=["I am logged in", "I am on ProfilePage"],
-                when_actions=["I tap settings", "I update my bio", "I save changes"],
-                then_expectations=["Bio is updated", "Changes are saved", "I return to ProfilePage"]
-            ),
-            BusinessScenario(
-                id=4,
-                title="Like a video post",
-                feature="Social interaction", 
-                goal="Like video content",
-                given_conditions=["I am on HomePage", "I see a video I want to like"],
-                when_actions=["I tap the like button"],
-                then_expectations=["Like button changes state", "Like count increases"]
-            )
-        ]
+        """Add all business scenarios from scenarios file to vector store"""
+        from ..scenarios.business_scenarios import get_all_business_scenarios
         
-        print("📚 Adding sample business scenarios to vector store...")
-        for scenario in sample_scenarios:
+        scenarios = get_all_business_scenarios()
+        
+        print(f"📚 Adding {len(scenarios)} business scenarios to vector store...")
+        for scenario in scenarios:
             self.kg.add_business_scenario_to_vector_store(scenario)
         
-        print(f"✅ Added {len(sample_scenarios)} sample business scenarios")
+        print(f"✅ Added {len(scenarios)} business scenarios covering:")
+        features = list(set(s.feature for s in scenarios))
+        for feature in sorted(features):
+            count = len([s for s in scenarios if s.feature == feature])
+            print(f"   - {feature}: {count} scenarios")
+        
+        print(f"📋 Total scenario types: {len(set(s.scenario_type for s in scenarios))}")
+        print(f"🏷️  Total unique tags: {len(set(tag for s in scenarios for tag in s.tags))}")
 
 
 def demo_query_interface():

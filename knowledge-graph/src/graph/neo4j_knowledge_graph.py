@@ -143,12 +143,12 @@ class Neo4jKnowledgeGraph:
             if end_state:
                 query = """
                     MATCH path = (start:State {name: $start_state})-[:HAS_COMPONENT]->(c:Component)
-                             -[action:TAP|SWIPE|SCROLL|TYPE*1..{max_depth}]->(end:State {name: $end_state})
+                             -[action:TAP|SWIPE|SCROLL|TYPE]->(end:State {name: $end_state})
                     RETURN path, 
                            [rel in relationships(path) | type(rel)] as actions,
                            [node in nodes(path) | node] as nodes
                     LIMIT 20
-                """.format(max_depth=max_depth)
+                """
                 
                 result = session.run(query, {
                     "start_state": start_state,
@@ -237,7 +237,7 @@ class Neo4jKnowledgeGraph:
                 "scenario_id": scenario.id or 0,
                 "feature": scenario.feature,
                 "goal": scenario.goal,
-                "scenario_type": scenario.scenario_type.value
+                "scenario_type": str(scenario.scenario_type)
             }],
             ids=[f"scenario_{scenario.id or 0}"]
         )
@@ -280,40 +280,49 @@ class Neo4jKnowledgeGraph:
         nodes = selected_path["nodes"]
         actions = selected_path["actions"]
         
-        # Skip the first node (start state) and process component-action pairs
-        for i in range(1, len(nodes) - 1, 2):  # Component nodes are at odd indices
-            if i + 1 < len(actions):
-                component = nodes[i]
-                action_type = actions[i].lower()
-                
-                # Get action properties if available
-                component_id = component.get("id", "")
-                action_details = self.get_possible_actions_from_component(component_id)
-                
-                query_for_qwen = f"{action_type.capitalize()} on {component.get('name', 'component')}"
-                alternatives = [f"Long press on {component.get('name', 'component')}"]
-                
-                # Enhance with stored action properties
-                for action_detail in action_details:
-                    if action_detail["action_type"].lower() == action_type:
-                        props = action_detail.get("properties", {})
-                        if "query_for_qwen" in props:
-                            query_for_qwen = props["query_for_qwen"]
-                        if "alternative_actions" in props:
-                            alternatives = props["alternative_actions"]
-                        break
-                
-                step = ExecutorStep(
-                    step_id=step_id,
-                    description=f"{action_type.capitalize()} {component.get('name', 'component')}",
-                    action_type=action_type,
-                    query_for_qwen=query_for_qwen,
-                    alternative_actions=alternatives,
-                    expected_state=nodes[i + 1].get("name") if i + 1 < len(nodes) else None
-                )
-                
-                steps.append(step)
-                step_id += 1
+        # Debug path structure
+        self.logger.info(f"Path structure - Nodes: {len(nodes)}, Actions: {len(actions)}")
+        self.logger.info(f"Actions: {actions}")
+        self.logger.info(f"Node types: {[node.get('name', 'unknown') for node in nodes]}")
+        
+        # Path structure: State -> Component -> State
+        # Actions: ["HAS_COMPONENT", "TAP/SWIPE/SCROLL/TYPE"]
+        if len(nodes) >= 3 and len(actions) >= 2:
+            start_state = nodes[0]
+            component = nodes[1] 
+            end_state = nodes[2]
+            action_type = actions[1].lower()  # Skip "HAS_COMPONENT", get actual action
+            
+            # Get action properties if available
+            component_id = component.get("id", "")
+            action_details = self.get_possible_actions_from_component(component_id)
+            
+            query_for_qwen = f"{action_type.capitalize()} on {component.get('name', 'component')}"
+            alternatives = [f"Long press on {component.get('name', 'component')}"]
+            
+            # Enhance with stored action properties
+            for action_detail in action_details:
+                if action_detail["action_type"].lower() == action_type:
+                    props = action_detail.get("properties", {})
+                    if "query_for_qwen" in props:
+                        query_for_qwen = props["query_for_qwen"]
+                    if "alternative_actions" in props:
+                        alternatives = props["alternative_actions"]
+                    break
+            
+            step = ExecutorStep(
+                step_id=step_id,
+                description=f"{action_type.capitalize()} {component.get('name', 'component')}",
+                action_type=action_type,
+                query_for_qwen=query_for_qwen,
+                alternative_actions=alternatives,
+                expected_state=end_state.get("name") if end_state else None
+            )
+            
+            steps.append(step)
+            self.logger.info(f"Generated step: {step.description}")
+        else:
+            self.logger.warning(f"Unexpected path structure: {len(nodes)} nodes, {len(actions)} actions")
         
         return ScenarioPlan(
             scenario_id=1,
