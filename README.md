@@ -1,9 +1,13 @@
-# ☕ Coffee with Automation
+<div align="center">
 
-### AI-Powered GUI Testing for Real-World Mobile Apps
+# ☕ Coffee with Automation  
+
+### AI-Powered GUI Testing for Real-World Mobile Apps  
 
 📺 **View product video & screenshots here:**  
 👉 [Devpost Submission](https://devpost.com/software/bombotest)
+
+</div>
 
 
 ## 🚨 The Problem
