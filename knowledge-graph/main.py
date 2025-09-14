@@ -28,7 +28,7 @@ def setup_knowledge_graph():
     kg = Neo4jKnowledgeGraph(
         uri="bolt://localhost:7687",
         username="neo4j", 
-        password="tiktoktechjam"  # Change this to your actual Neo4j password
+        password="tiktokjam"
     )
     
     print("📊 Populating knowledge graph from ontology...")
