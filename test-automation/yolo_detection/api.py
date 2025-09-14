@@ -1,4 +1,4 @@
-# yolo_detection/api.py
+
 import os, io, re, time, base64, tempfile
 from typing import List, Optional
 
