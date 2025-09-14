@@ -20,7 +20,8 @@ from qwen_vl_utils import smart_resize
 from tools.mobile_tool import MobileUse
 from models.execution_models import ProcessorConfig
 from utils.knowledge_block import build_static_knowledge_block, detect_app
-from yolo_detection.pre_detection import get_prediction_from_step
+# from yolo_detection.pre_detection import get_prediction_from_step
+from utils.yolo_client import YoloHTTPClient
 class ActionProcessor:
     
     VALID_MOBILE_ACTIONS = {
@@ -88,7 +89,8 @@ class ActionProcessor:
         return self.process_screenshot_with_qwen(screenshot_path, user_query)
     
     def process_screenshot_with_qwen(self, screenshot_path: str, user_query: str) -> ActionResult:
-        yolo_coord = get_prediction_from_step(screenshot_path, user_query)
+        # yolo_coord = get_prediction_from_step(screenshot_path, user_query)
+        yolo_coord, meta = self.yolo_client.predict(screenshot_path, user_query, conf=0.90)
         if yolo_coord:
             #TODO: comment out
             print(f"YOLO matched '{user_query}' → {yolo_coord}")

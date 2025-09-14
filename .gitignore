@@ -33,6 +33,7 @@ MANIFEST
 *.spec
 
 # Installer logs
+*.log
 pip-log.txt
 pip-delete-this-directory.txt
 
@@ -50,6 +51,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+.
 
 # Translations
 *.mo
@@ -145,6 +147,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+*.sqlite3
+*.bin
 
 # Spyder project settings
 .spyderproject

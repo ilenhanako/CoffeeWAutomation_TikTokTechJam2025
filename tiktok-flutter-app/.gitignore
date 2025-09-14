@@ -1,0 +1,70 @@
+# =========================
+# Dart / Flutter
+# =========================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+build/
+pubspec.lock  # usually committed for apps, ignore for packages
+**/doc/api/
+
+# =========================
+# Flutter iOS
+# =========================
+ios/Flutter/.last_build_id
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Pods/
+ios/Runner.xcworkspace/
+ios/.symlinks/
+
+# =========================
+# Flutter Android
+# =========================
+android/.gradle/
+android/captures/
+android/app/build/
+android/local.properties
+
+# =========================
+# Web / macOS / Linux / Windows builds
+# =========================
+web/build/
+macos/Flutter/ephemeral/
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# =========================
+# Symbolication / Obfuscation
+# =========================
+app.*.symbols
+app.*.map.json
+
+# =========================
+# IDEs
+# =========================
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# =========================
+# Misc / OS
+# =========================
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.history
+.svn/
+.atom/
+.build/
+.buildlog/
+.swiftpm/
+migrate_working_dir/
